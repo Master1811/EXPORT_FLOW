@@ -87,7 +87,6 @@ def create_app() -> FastAPI:
     # Dashboard endpoints
     @app.get("/api/dashboard/stats")
     async def get_dashboard_stats(user: dict = Depends(get_current_user)):
-        from fastapi import Depends
         company_id = user.get("company_id", user["id"])
         
         shipments = await db.shipments.find({"company_id": company_id}, {"_id": 0}).to_list(500)

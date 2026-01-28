@@ -144,7 +144,6 @@ def create_app() -> FastAPI:
 
     @app.get("/api/files/{file_id}")
     async def get_file(file_id: str):
-        from fastapi import HTTPException
         file_doc = await db.files.find_one({"id": file_id}, {"_id": 0})
         if not file_doc:
             raise HTTPException(status_code=404, detail="File not found")
@@ -152,7 +151,6 @@ def create_app() -> FastAPI:
 
     @app.delete("/api/files/{file_id}")
     async def delete_file(file_id: str):
-        from fastapi import HTTPException
         result = await db.files.delete_one({"id": file_id})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="File not found")

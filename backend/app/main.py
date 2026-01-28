@@ -126,7 +126,6 @@ def create_app() -> FastAPI:
     # File endpoints
     @app.post("/api/files/upload")
     async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-        from fastapi import Depends
         file_id = generate_id()
         content = await file.read()
         

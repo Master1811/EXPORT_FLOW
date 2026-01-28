@@ -1,16 +1,10 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+    min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
-}
-
+/* Remove default center alignment */
 .App-header {
-    background-color: #0f0f10;
+    background-color: #09090B;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -21,14 +15,97 @@
 }
 
 .App-link {
-    color: #61dafb;
+    color: #3B82F6;
 }
 
-@keyframes App-logo-spin {
+/* Custom animations */
+@keyframes spin {
     from {
         transform: rotate(0deg);
     }
     to {
         transform: rotate(360deg);
     }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Noise overlay base styles */
+.noise-overlay {
+    position: relative;
+}
+
+/* Progress bar custom colors */
+.progress-bar {
+    background: linear-gradient(90deg, #3B82F6, #10B981);
+}
+
+/* Custom scrollbar for webkit browsers */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #18181B;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #27272A;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3B82F6;
+}
+
+/* Table hover effects */
+.hover-row:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Card hover lift effect */
+.hover-lift {
+    transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+/* Glow effects */
+.glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.glow-green {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Badge styling */
+.badge-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+}
+
+.badge-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #F59E0B;
+}
+
+.badge-error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+/* Subtle gradient backgrounds */
+.gradient-subtle {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+}
+
+/* Focus ring styling */
+.focus-ring:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }

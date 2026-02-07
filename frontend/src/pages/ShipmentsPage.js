@@ -21,6 +21,7 @@ import {
   XCircle, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import EmptyState from '../components/EmptyState';
 
 const STATUS_COLORS = {
   draft: 'bg-muted text-muted-foreground',

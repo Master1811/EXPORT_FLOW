@@ -88,15 +88,39 @@ class ShipmentService:
             query["company_id"] = user.get("company_id", user["id"])
         
         update_data = data.model_dump(exclude_unset=True, exclude_none=True)
+        
+        # Optimistic locking - check version if provided
+        provided_version = update_data.pop("version", None)
+        
         update_data["updated_at"] = now_iso()
         
         # Recalculate e-BRC due date if ship date changed
         if "actual_ship_date" in update_data:
             update_data["ebrc_due_date"] = calculate_ebrc_due_date(update_data["actual_ship_date"])
         
-        result = await db.shipments.update_one(query, {"$set": update_data})
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Shipment not found")
+        # If version provided, use optimistic locking
+        if provided_version is not None:
+            query["version"] = provided_version
+            update_data["version"] = provided_version + 1
+            
+            result = await db.shipments.update_one(query, {"$set": update_data})
+            if result.matched_count == 0:
+                # Check if shipment exists at all
+                exists = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
+                if exists:
+                    raise HTTPException(
+                        status_code=409, 
+                        detail="Conflict: The shipment has been modified by another user. Please refresh and try again."
+                    )
+                raise HTTPException(status_code=404, detail="Shipment not found")
+        else:
+            # No version provided - use regular update with version increment
+            result = await db.shipments.update_one(
+                query, 
+                {"$set": update_data, "$inc": {"version": 1}}
+            )
+            if result.matched_count == 0:
+                raise HTTPException(status_code=404, detail="Shipment not found")
         
         shipment = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
         return ShipmentService._to_response(shipment)

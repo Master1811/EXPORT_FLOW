@@ -498,6 +498,272 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Dashboard Preview Section */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-950/5 to-transparent" />
+        
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-100px' }}
+            variants={fadeInUp}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              See ExportFlow{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">
+                in Action
+              </span>
+            </h2>
+            <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
+              A clean, powerful dashboard designed for busy exporters. No clutter, just insights.
+            </p>
+          </motion.div>
+          
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-100px' }}
+            variants={scaleIn}
+            className="relative"
+          >
+            {/* Dashboard Preview Mock */}
+            <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-sm overflow-hidden shadow-2xl shadow-violet-500/10">
+              {/* Browser Chrome */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-zinc-800/50 border-b border-zinc-700">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                </div>
+                <div className="flex-1 mx-4">
+                  <div className="bg-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-400 max-w-xs mx-auto">
+                    app.exportflow.in/dashboard
+                  </div>
+                </div>
+              </div>
+              
+              {/* Dashboard Content */}
+              <div className="p-6 space-y-6">
+                {/* Stats Row */}
+                <div className="grid grid-cols-4 gap-4">
+                  {[
+                    { label: 'Total Exports', value: '₹45.2L', color: 'text-blue-400' },
+                    { label: 'Receivables', value: '₹12.8L', color: 'text-amber-400' },
+                    { label: 'Incentives', value: '₹2.1L', color: 'text-emerald-400' },
+                    { label: 'GST Refund', value: '₹3.5L', color: 'text-violet-400' }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+                      <p className="text-xs text-zinc-500 mb-1">{stat.label}</p>
+                      <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Charts Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Export Trend Chart */}
+                  <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+                    <p className="text-sm text-zinc-400 mb-3">Export Trend</p>
+                    <div className="flex items-end justify-between h-24 gap-2">
+                      {[40, 55, 45, 70, 60, 80].map((h, i) => (
+                        <div 
+                          key={i} 
+                          className="flex-1 bg-gradient-to-t from-blue-600 to-blue-400 rounded-sm"
+                          style={{ height: `${h}%` }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs text-zinc-500">
+                      <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+                    </div>
+                  </div>
+                  
+                  {/* Payment Status */}
+                  <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+                    <p className="text-sm text-zinc-400 mb-3">Payment Status</p>
+                    <div className="flex items-center justify-center h-24">
+                      <div className="relative w-24 h-24">
+                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="40" fill="none" stroke="#27272A" strokeWidth="12" />
+                          <circle cx="50" cy="50" r="40" fill="none" stroke="#10B981" strokeWidth="12" 
+                            strokeDasharray="163" strokeDashoffset="50" className="transform -rotate-90 origin-center" />
+                          <circle cx="50" cy="50" r="40" fill="none" stroke="#F59E0B" strokeWidth="12" 
+                            strokeDasharray="163" strokeDashoffset="130" className="transform -rotate-90 origin-center" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-lg font-bold text-white">65%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-center gap-4 mt-2 text-xs">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Received</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Pending</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Alerts Row */}
+                <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+                  <p className="text-sm text-zinc-400 mb-3">Risk Alerts</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
+                      <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">medium</span>
+                      <span className="text-sm text-zinc-300">e-BRC deadline in 12 days for SHP-2024-0042</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 rounded-md bg-blue-500/10 border border-blue-500/20">
+                      <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">low</span>
+                      <span className="text-sm text-zinc-300">Payment from ABC Traders is 45 days outstanding</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Decorative gradient */}
+            <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-3/4 h-40 bg-violet-600/20 blur-[100px]" />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-24 px-6 relative" id="pricing">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-100px' }}
+            variants={fadeInUp}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Simple,{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                Transparent
+              </span>{' '}
+              Pricing
+            </h2>
+            <p className="text-zinc-400 text-lg">
+              Start free. Scale as you grow. No hidden fees.
+            </p>
+          </motion.div>
+          
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-100px' }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            {/* Free Plan */}
+            <motion.div variants={fadeInUp}>
+              <div className="relative p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 transition-colors h-full">
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-white mb-2">Starter</h3>
+                  <p className="text-zinc-400 text-sm">Perfect for small exporters</p>
+                </div>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-white">Free</span>
+                  <span className="text-zinc-500 ml-2">forever</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {['Up to 5 shipments/month', 'Basic receivable tracking', 'GST refund calculator', 'Email support'].map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                      <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-zinc-700 hover:bg-zinc-800"
+                  onClick={() => navigate('/register')}
+                >
+                  Get Started Free
+                </Button>
+              </div>
+            </motion.div>
+            
+            {/* Pro Plan - Highlighted */}
+            <motion.div variants={fadeInUp}>
+              <div className="relative p-8 rounded-2xl border-2 border-violet-500/50 bg-gradient-to-b from-violet-950/30 to-zinc-900/50 h-full">
+                {/* Popular Badge */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="px-3 py-1 bg-violet-600 text-white text-xs font-medium rounded-full">
+                    Most Popular
+                  </span>
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-white mb-2">Professional</h3>
+                  <p className="text-zinc-400 text-sm">For growing export businesses</p>
+                </div>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-white">₹2,999</span>
+                  <span className="text-zinc-500 ml-2">/month</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {[
+                    'Unlimited shipments',
+                    'Full incentive optimizer',
+                    'e-BRC monitoring & alerts',
+                    'Aging dashboard',
+                    'AI-powered insights',
+                    'Priority support'
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                      <CheckCircle className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  className="w-full bg-violet-600 hover:bg-violet-700"
+                  onClick={() => navigate('/register')}
+                >
+                  Start 14-Day Trial
+                </Button>
+              </div>
+            </motion.div>
+            
+            {/* Enterprise Plan */}
+            <motion.div variants={fadeInUp}>
+              <div className="relative p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 transition-colors h-full">
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-white mb-2">Enterprise</h3>
+                  <p className="text-zinc-400 text-sm">For large export houses</p>
+                </div>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold text-white">Custom</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {[
+                    'Everything in Professional',
+                    'Multi-user access',
+                    'API integrations',
+                    'Custom reports',
+                    'Dedicated account manager',
+                    'SLA guarantee'
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                      <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-zinc-700 hover:bg-zinc-800"
+                  onClick={() => window.open('mailto:sales@exportflow.in', '_blank')}
+                >
+                  Contact Sales
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Final CTA Section */}
       <section className="py-32 px-6 relative">
         {/* Background gradient */}

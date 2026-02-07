@@ -4,8 +4,16 @@ from ..core.dependencies import get_current_user
 from .models import ShipmentCreate, ShipmentResponse, ShipmentUpdate, EBRCUpdateRequest
 from .service import ShipmentService
 from ..common.audit_service import audit_service
+from ..common.tamper_proof_audit import audit_service as tamper_audit, TamperProofAuditService
 
 router = APIRouter(prefix="/shipments", tags=["Shipments"])
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP from request."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else None
 
 @router.post("", response_model=ShipmentResponse)
 async def create_shipment(data: ShipmentCreate, user: dict = Depends(get_current_user)):

@@ -50,11 +50,14 @@ class ShipmentResponse(BaseModel):
     ebrc_number: Optional[str] = None
     ebrc_due_date: Optional[str] = None
     ebrc_days_remaining: Optional[int] = None
+    ebrc_rejection_reason: Optional[str] = None
     # Buyer contact (masked by default)
     buyer_email: Optional[str] = None
     buyer_phone: Optional[str] = None
     buyer_pan: Optional[str] = None
     buyer_bank_account: Optional[str] = None
+    # Optimistic locking version
+    version: int = 1
 
 class ShipmentUpdate(BaseModel):
     buyer_name: Optional[str] = None

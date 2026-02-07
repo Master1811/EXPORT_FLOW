@@ -375,6 +375,8 @@ class ExportService:
     @staticmethod
     async def _update_job(job_id: str, status: str, progress: int, total_rows: int = None, file_path: str = None, file_name: str = None, error: str = None):
         """Update job status in database"""
+        from ..core.database import db
+        
         update = {
             "status": status,
             "progress": progress
@@ -395,6 +397,8 @@ class ExportService:
     @staticmethod
     async def list_jobs(user: dict, limit: int = 10) -> List[dict]:
         """List recent export jobs for user"""
+        from ..core.database import db
+        
         jobs = await db.export_jobs.find(
             {"company_id": user.get("company_id", user["id"])},
             {"_id": 0}
@@ -416,6 +420,7 @@ class ExportService:
     @staticmethod
     async def cleanup_old_exports(days: int = 7):
         """Cleanup export files older than specified days"""
+        from ..core.database import db
         import os
         from datetime import timedelta
         

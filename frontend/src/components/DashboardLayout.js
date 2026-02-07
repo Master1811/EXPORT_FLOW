@@ -36,8 +36,13 @@ export const DashboardLayout = ({ children }) => {
       // Continue with logout even if API call fails
       console.error('Logout API error:', error);
     }
-    logout();
-    navigate('/');  // Navigate to landing page instead of login
+    // Navigate first, then clear auth state
+    // This prevents ProtectedRoute from redirecting to /login
+    navigate('/');
+    // Small delay to allow navigation to complete
+    setTimeout(() => {
+      logout();
+    }, 100);
   };
 
   return (

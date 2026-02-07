@@ -2143,9 +2143,8 @@ Test Reports:     /app/test_reports/
 
 ## B. Contact & Support
 
-**Technical Questions:** [Your DevOps Team]
-**Security Issues:** [Your Security Team]
-**Business Queries:** [Your Product Team]
+CTO - RUDRANSH TYAGI 
+PEON - SHRESTH AGARWAL
 
 ---
 

@@ -2,11 +2,19 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from ..core.database import db
 from ..common.utils import generate_id, now_iso
+from ..common.encryption_service import encrypt_field, decrypt_field, mask_field, SENSITIVE_FIELDS
+from ..common.tamper_proof_audit import audit_service, TamperProofAuditService
 from .models import ShipmentCreate, ShipmentResponse, ShipmentUpdate, EBRCUpdateRequest
 from fastapi import HTTPException
 
 # e-BRC deadline is 60 days from shipment date
 EBRC_DEADLINE_DAYS = 60
+
+# Fields to encrypt in shipments
+SHIPMENT_ENCRYPTED_FIELDS = [
+    "buyer_name", "buyer_phone", "buyer_pan", 
+    "buyer_bank_account", "buyer_email", "total_value"
+]
 
 def mask_pii(value: str, visible_chars: int = 4) -> str:
     """Mask sensitive data showing only last few characters"""

@@ -7,146 +7,76 @@ Build a comprehensive Exporter Finance & Compliance Platform with full-stack arc
 
 ## What's Been Implemented
 
-### February 7, 2025 - P0/P1 Fixes & New Features (COMPLETED)
+### February 7, 2025 - New Features & P2 Tasks (COMPLETED)
 
-**P0 Fix: e-BRC Rejection Reason Enforcement (TC-EBRC-05):**
-- Backend now requires `rejection_reason` field when `ebrc_status` is 'rejected'
-- Returns 422 Unprocessable Entity if reason is missing
-- Updated `EBRCUpdateRequest` model and `update_ebrc` service method
-- Frontend e-BRC dialog now shows rejection reason input when status is 'rejected'
+**Quick Start Tutorial:**
+- Step-by-step modal wizard for new user onboarding
+- Flow: Welcome → Create Shipment → Record Payment → Check Incentives → Complete
+- Auto-shows for users with 0 shipments
+- "Quick Start" button in dashboard header for manual trigger
 
-**P1 Fix: Audit Logging for PII Unmasking (TC-SEC-03):**
-- `/api/shipments/{id}/unmasked` endpoint now logs to audit trail
-- Created `AuditService` in `/app/backend/app/common/audit_service.py`
-- Created `/api/audit/logs` and `/api/audit/pii-access` endpoints
-- Logs include: user_id, action, resource_type, resource_id, accessed_fields, timestamp, IP address
+**Enhanced Dashboard UI/UX:**
+- **Quick Actions Bar** with 8 shortcuts: New Shipment, Record Payment, Upload Doc, GST Calculator, Incentives, Reports, AI Insights, e-BRC Track
+- **Clickable Stat Cards** that navigate to relevant pages
+- **Gradient backgrounds** and glow effects on cards
+- **Enhanced charts** with better tooltips and styling
+- **Performance Overview** section with progress bars
 
-**P1: Empty State UI (TC-SYS-02):**
-- Created `EmptyState` component in `/app/frontend/src/components/EmptyState.js`
-- Implemented on 4 pages: Dashboard, Shipments, Payments, Incentives
-- Shows onboarding UI with tips and CTA for new users with zero data
+**Enhanced Connectors Page:**
+- **Bank Account (AA)** connector with Account Aggregator flow
+  - Multi-step linking: Select Bank → Enter Account → Consent → Complete
+  - Shows linked accounts with balances (HDFC, ICICI, etc.)
+- **GST Portal** connector with GSTIN linking
+  - Shows GSTR-1/3B filing status and ITC balance
+- **ICEGATE (Customs)** connector with IEC code verification
+  - Shows shipping bills count and duty drawback pending
+- **Security Badge** explaining secure connections
+- **How Connectors Work** information section
 
-**Logout Navigation:**
-- Fixed logout to navigate to landing page (`/`) instead of login page
-- Updated `handleLogout` in DashboardLayout to navigate before clearing auth state
+**P2: Optimistic Locking (Concurrency Control):**
+- Added `version` field to Shipment model (initialized to 1)
+- Update with correct version → succeeds, version increments
+- Update with stale version → returns 409 Conflict
+- Helpful error message: "The shipment has been modified by another user. Please refresh and try again."
 
-**Landing Page Enhancements:**
-- Added **Pricing Section** with 3 tiers:
-  - Starter: Free forever (5 shipments/month)
-  - Professional: ₹2,999/month (Unlimited shipments, all features)
-  - Enterprise: Custom pricing (Multi-user, API, SLA)
-- Added **Dashboard Preview** section with mock:
-  - Export Trend bar chart
-  - Payment Status donut chart
-  - Risk Alerts examples
-  - Stats cards (Total Exports, Receivables, Incentives, GST Refund)
-
-### February 7, 2025 - P2 Features: AI, OCR, Notifications (COMPLETED)
-
-**Gemini AI Service:**
-- `POST /api/ai/query` - Chat with ExportFlow AI (Gemini 3 Flash)
-- `GET /api/ai/chat-history` - View conversation history
-- `GET /api/ai/analyze-shipment/{id}` - AI analysis of specific shipment
-- `GET /api/ai/risk-alerts` - Overdue payments + e-BRC deadline alerts
-- `GET /api/ai/incentive-optimizer` - Recommendations to maximize benefits
-- `GET /api/ai/refund-forecast` - Expected refund projections
-- `GET /api/ai/cashflow-forecast` - Cash flow predictions
-
-**Document OCR Service:**
-- `POST /api/documents/upload` - Upload documents (PDF, PNG, JPG)
-- `GET /api/documents/uploads` - List uploaded files
-- `POST /api/documents/ocr/process` - Extract data using Gemini Vision
-- Supports: Commercial Invoices, Shipping Bills, Packing Lists
-
-**Email Notifications (SendGrid):**
-- `POST /api/notifications/email/send-alerts` - Send e-BRC and overdue alerts
-- `GET /api/notifications/email/log` - View notification history
-- Beautiful HTML email templates for alerts
-- Graceful handling when SendGrid API key not configured
-
-### February 7, 2025 - P2 Security & Export (COMPLETED)
-
-**JWT Blacklisting:**
-- Token invalidation on logout
-- All tokens invalidated on password change
-- MongoDB token_blacklist collection
-
-**Async Export Service:**
-- CSV, Excel (.xlsx), PDF formats
-- Progress tracking
-- Download via `/api/exports/download/{id}`
-
-### February 7, 2025 - Epics 2, 3 & 5 (COMPLETED)
-
-**e-BRC Monitoring (Epic 2):**
-- Status tracking: pending → filed → approved/rejected
-- 60-day deadline calculation
-- Alerts for overdue/due-soon shipments
-
-**Receivables Aging Dashboard (Epic 3):**
-- Aging buckets: 0-30, 31-60, 61-90, 90+ days
-- Visual bar/pie charts
-- Overdue alerts
-
-**Incentives Optimizer (Epic 5):**
-- Moradabad handicraft HS codes database
-- RoDTEP/RoSCTL/Drawback rate lookup
-- "Money Left on Table" dashboard
-
-**Security:**
-- IDOR Protection (404 on unauthorized access)
-- PII Masking (buyer PAN/phone/bank masked by default)
+### Previous Session Updates
+- P0 Fix: e-BRC rejection reason enforcement
+- P1 Fix: Audit logging for PII unmasking
+- P1: Empty State UI for new users
+- Logout → Navigate to landing page
+- Landing page pricing section with 3 tiers
+- Landing page dashboard preview section
 
 ---
 
 ## Test Reports Summary
 | Iteration | Backend | Frontend | Features |
 |-----------|---------|----------|----------|
-| 1 | 95.7% | 90% | Initial build |
-| 2 | 100% (27/27) | 100% | Epic 5 Incentives |
-| 3 | 100% (23/23) | 100% | Epic 2 & 3 |
-| 4 | 100% (24/24) | N/A | Security & Export |
-| 5 | 100% (16/16) | 100% | E2E Test Suite |
-| 6 | 100% (20/20) | 100% | AI, OCR, Email |
 | 7 | 100% (11/11) | 100% | P0/P1 Fixes, Landing Page |
+| 8 | 100% (12/12) | 95% | Quick Start, Connectors, Dashboard UI, Optimistic Locking |
 
 ---
 
-## API Summary (75+ endpoints)
+## API Summary (80+ endpoints)
 
-### Authentication
-- `POST /api/auth/register`, `/login`, `/logout`, `/change-password`
+### New/Updated Endpoints
+- `PUT /api/shipments/{id}` - Now supports `version` field for optimistic locking
+- `GET /api/sync/bank` - Bank account sync status with account details
+- `GET /api/sync/gst` - GST portal sync with filing status
+- `GET /api/sync/customs` - ICEGATE sync with shipping bill count
+- `POST /api/connect/bank/initiate` - Initiate bank connection via AA
+- `POST /api/connect/gst/link` - Link GSTIN
+- `POST /api/connect/customs/link` - Link IEC code
 
-### AI & Forecasting
-- `POST /api/ai/query` - Chat with Gemini AI
-- `GET /api/ai/risk-alerts`, `/incentive-optimizer`, `/refund-forecast`, `/cashflow-forecast`
-- `GET /api/ai/analyze-shipment/{id}`, `/chat-history`
-
-### Audit
-- `GET /api/audit/logs` - General audit logs
-- `GET /api/audit/pii-access` - PII access audit logs
-
-### Documents
-- `POST /api/documents/upload`, `/api/documents/ocr/process`
-- `GET /api/documents/uploads`
-
-### Notifications
-- `POST /api/notifications/email/send-alerts`
-- `GET /api/notifications/email/log`
-
-### Exports
-- `POST /api/exports`, `GET /api/exports/jobs`, `/download/{id}`
-
-### Shipments
-- CRUD + e-BRC management + dashboard
-- `PUT /api/shipments/{id}/ebrc` - e-BRC status update (requires rejection_reason for rejected)
-- `GET /api/shipments/{id}/unmasked` - PII unmasking (creates audit log)
-
-### Payments
-- `GET /api/payments/receivables/aging-dashboard`
-
-### Incentives
-- `GET /api/incentives/leakage-dashboard`, `/rodtep-eligibility`
+### Core Endpoints
+- Authentication: `/api/auth/*`
+- Shipments: `/api/shipments/*` (with version field for concurrency)
+- Payments: `/api/payments/*`
+- Incentives: `/api/incentives/*`
+- AI: `/api/ai/*`
+- Audit: `/api/audit/*`
+- Documents: `/api/documents/*`
+- Exports: `/api/exports/*`
 
 ---
 
@@ -156,39 +86,68 @@ Email: test@moradabad.com
 Password: Test@123
 ```
 
-## Environment Variables (Required for Full Functionality)
-```
-SENDGRID_API_KEY=your_sendgrid_key  # For email alerts
-SENDER_EMAIL=noreply@yourcompany.com
-EMERGENT_LLM_KEY=your_key  # For Gemini AI (already configured)
-```
-
 ---
 
 ## Prioritized Backlog
 
-### P0 - Critical (COMPLETED)
-- [x] e-BRC rejection reason enforcement
+### Completed ✅
+- [x] P0: e-BRC rejection reason enforcement
+- [x] P1: Audit logging for PII unmasking
+- [x] P1: Empty State UI
+- [x] P2: Optimistic Locking (Concurrency Control)
+- [x] Quick Start Tutorial
+- [x] Enhanced Dashboard UI/UX
+- [x] Connectors page with Bank/ICEGATE linking
 
-### P1 - High Priority (COMPLETED)
-- [x] Audit logging for PII unmasking
-- [x] Empty State UI for new users
-
-### P2 - Medium Priority (Remaining)
-- [ ] TC-SYS-01: Concurrency control (Optimistic Locking)
+### Remaining P2 Tasks
 - [ ] TC-SEC-04: Verify no PII in frontend state logs
 - [ ] TC-SYS-03: Performance testing (Aging Dashboard <300ms with 100+ shipments)
-- [ ] WhatsApp notifications (requires Twilio credentials)
 
 ### Future/Backlog
-- [ ] Migration Architecture Document (Spring Boot/PostgreSQL)
+- [ ] WhatsApp notifications (requires Twilio credentials)
+- [ ] Migration Architecture to Next.js + Spring Boot (guide created)
 - [ ] Feature roadmap to 2030
 - [ ] DDoS protection & infrastructure resilience
 
 ---
 
+## Key Technical Features
+
+### Optimistic Locking Pattern
+```javascript
+// Frontend: Include version in update request
+const updateShipment = async (id, data, version) => {
+  const response = await api.put(`/shipments/${id}`, { ...data, version });
+  // New version returned in response
+  return response.data; // { ...shipment, version: newVersion }
+};
+
+// Handle conflict
+try {
+  await updateShipment(id, data, currentVersion);
+} catch (error) {
+  if (error.response?.status === 409) {
+    // Refresh data and show conflict message
+    toast.error('Data was modified. Please refresh.');
+  }
+}
+```
+
+### Quick Start Tutorial
+- Located at `/app/frontend/src/components/QuickStartTutorial.js`
+- 5 steps: Welcome, Shipment, Payment, Incentives, Complete
+- Skippable with localStorage flag
+- Auto-triggers for new users
+
+### Connectors Integration
+- Bank: Uses RBI Account Aggregator framework (simulated)
+- GST: GSTIN-based linking with public data fetch
+- ICEGATE: IEC code verification with DGFT
+
+---
+
 ## Documentation
-- `/app/MIGRATION_GUIDE.md` - Spring Boot/PostgreSQL migration
+- `/app/MIGRATION_GUIDE.md` - Next.js + Spring Boot migration (comprehensive)
 - `/app/LOCAL_SETUP_GUIDE.md` - Local development setup
 - `/app/memory/PRD.md` - Product Requirements
 

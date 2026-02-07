@@ -260,7 +260,11 @@ class ShipmentService:
                     value = mask_pii(value) if value else None
                 response_data[key] = value
             else:
-                response_data[key] = None
+                # Set default values for optional fields
+                if key == "version":
+                    response_data[key] = shipment.get("version", 1)
+                else:
+                    response_data[key] = None
         
         # Calculate e-BRC days remaining
         if shipment.get("ebrc_due_date"):

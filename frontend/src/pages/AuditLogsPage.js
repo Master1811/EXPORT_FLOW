@@ -100,8 +100,8 @@ export default function AuditLogsPage() {
     setLoading(true);
     try {
       let url = '/security/audit-logs?limit=100';
-      if (actionFilter) url += `&action=${actionFilter}`;
-      if (resourceFilter) url += `&resource_type=${resourceFilter}`;
+      if (actionFilter && actionFilter !== 'all') url += `&action=${actionFilter}`;
+      if (resourceFilter && resourceFilter !== 'all') url += `&resource_type=${resourceFilter}`;
       
       const res = await api.get(url);
       setLogs(res.data.logs || []);

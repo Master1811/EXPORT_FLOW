@@ -21,118 +21,109 @@ Frontend (React + Tailwind) → API Gateway (FastAPI) → MongoDB
                             AI Service (Gemini 3 Flash)
 ```
 
-## Core Requirements
-- [x] User authentication (JWT-based)
-- [x] Company management
-- [x] Shipment CRUD operations
-- [x] Trade document management (Invoice, Packing List, Shipping Bill)
-- [x] Payment tracking and receivables aging
-- [x] Forex rates and currency conversion
-- [x] GST compliance (LUT status, refund tracking)
-- [x] Export incentives (RoDTEP/RoSCTL calculator)
-- [x] AI-powered query assistant
-- [x] Credit intelligence (buyer scores, payment behavior)
-- [x] Connector engine (Bank AA, GST Portal, ICEGATE)
-
 ---
 
 ## What's Been Implemented
 
+### February 7, 2025 - Epic 2 & 3: e-BRC Monitor + Aging Dashboard (COMPLETED)
+
+**Epic 2 - e-BRC Monitoring:**
+- e-BRC status tracking: pending → filed → approved/rejected
+- 60-day deadline calculation from ship date
+- Alerts for overdue and due-soon shipments
+- Update dialog with filed date and e-BRC number fields
+- Dashboard with summary cards (Pending, Filed, Approved, Overdue)
+
+**Epic 3 - Receivables Aging Dashboard:**
+- Aging buckets: 0-30, 31-60, 61-90, 90+ days
+- Visual bar chart and pie chart
+- Overdue alerts (60+ days)
+- Detailed breakdown by bucket (click to expand)
+- Record Payment flow with shipment selection
+
+**Security Enhancements:**
+- **PII Masking:** Buyer PAN, phone, bank account masked by default (shows `******1234`)
+- **IDOR Protection:** All queries filtered by company_id; returns 404 for unauthorized access
+- **Unmasked Endpoint:** `/api/shipments/{id}/unmasked` for explicit PII reveal
+
 ### February 7, 2025 - Epic 5: Incentives Optimizer (COMPLETED)
 
-**The Hero Feature - "Money Left on Table" Dashboard**
-
-1. **HS Code Database with Moradabad Handicraft Codes:**
-   - 74198030: Brass Artware/Handicrafts (RoDTEP 3%, Drawback 1.2% = 4.2%)
-   - 74181022: Copper Utensils (RoDTEP 2%, Drawback 0.8% = 2.8%)
-   - 94032010: Iron/Metal Furniture (RoDTEP 1%, Drawback 0.5% = 1.5%)
-   - 94055000: Decorative Lamps (RoDTEP 2%, Drawback 0.8% = 2.8%)
-   - 73269099: Metal Planters (RoDTEP 1.5%, Drawback 0.6% = 2.1%)
-   - 68022190: Stone/Marble Articles (RoDTEP 2%, Drawback 0.8% = 2.8%)
-
-2. **New API Endpoints:**
-   - `GET /api/incentives/leakage-dashboard` - Comprehensive "Money Left on Table" data
-   - `GET /api/incentives/shipment-analysis` - Per-shipment incentive breakdown
-   - `GET /api/incentives/hs-codes/search` - HS code search functionality
-   - Enhanced `GET /api/incentives/rodtep-eligibility` with all rates
-
-3. **Frontend Comprehensive Dashboard:**
-   - **Money Left on Table Hero Card** - Prominent display of potential recoverable amount
-   - **Summary Stats** - Total Potential, Claimed, Total Exports, Claim Rate
-   - **3-Tab Interface:**
-     - Dashboard: Top leaking shipments, scheme breakdown chart, HS code reference
-     - Shipment Analysis: Detailed per-shipment table with claimed vs potential
-     - HS Code Checker: Eligibility checker with quick reference buttons
-   - **Calculate Incentive Dialog** - Calculate incentives for any shipment
-
-4. **Test Data:**
-   - 4 sample shipments created (brass, copper, furniture, lamps)
-   - Total exports: ₹32 Lakhs
-   - Potential incentives: ₹85,250
-   - Test account: test@moradabad.com / Test@123
+**The Hero Feature - "Money Left on Table" Dashboard:**
+- Moradabad handicraft HS codes (brass, copper, furniture, lamps, planters, stone)
+- RoDTEP/RoSCTL/Drawback rate lookup
+- Comprehensive 3-tab dashboard (Dashboard, Shipment Analysis, HS Code Checker)
+- Total potential incentives calculation from all shipments
 
 ### January 28, 2025 - Initial Build (COMPLETED)
 
-**Backend (FastAPI):**
-- Full REST API with 50+ endpoints
-- JWT authentication with token refresh
-- MongoDB integration with proper ObjectId handling
-- AI integration with Gemini 3 Flash via emergentintegrations
-- All compliance, incentive, and credit endpoints
-
-**Frontend (React):**
-- 14 pages: Login, Register, Dashboard, Shipments, Documents, Payments, Forex, Compliance, Incentives, AI, Credit, Connectors, Notifications, Settings
-- Dark fintech theme with "Electric Swiss" design
-- Responsive sidebar navigation
-- Interactive charts (Recharts)
-- Shadcn UI components
-- Form dialogs for CRUD operations
+**Backend:** Full REST API with 60+ endpoints, JWT auth, MongoDB integration
+**Frontend:** 14 pages with dark fintech theme, Shadcn UI components, Recharts visualizations
 
 ---
 
-## Design System
-- **Colors:** Deep Obsidian (#09090B), Electric Blue (#3B82F6), Neon Green (#10B981), Amber (#F59E0B)
-- **Typography:** Barlow Condensed (headings), Inter (body), JetBrains Mono (code)
-- **Layout:** Bento grid dashboard layout
+## Test Reports Summary
+| Iteration | Date | Backend | Frontend | Features |
+|-----------|------|---------|----------|----------|
+| 1 | Jan 28 | 95.7% | 90% | Initial build |
+| 2 | Feb 7 | 100% (27/27) | 100% | Epic 5 Incentives |
+| 3 | Feb 7 | 100% (23/23) | 100% | Epic 2 & 3 |
+
+---
+
+## Security Tests Status
+| Category | Test Case | Status |
+|----------|-----------|--------|
+| Security | IDOR Attack Prevention | ✅ Implemented - 404 on unauthorized access |
+| Frontend | PII Masking | ✅ Implemented - masked by default, click to reveal |
+| Performance | Async Export | 🔲 Pending (P2) |
+| Security | JWT Blacklisting | 🔲 Pending (P2) |
+| Architecture | DB Failover | 🔲 N/A (MongoDB handles reconnection) |
 
 ---
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETED
+### P0 (Critical) - ALL COMPLETED ✅
 - [x] Auth flow
 - [x] Dashboard with KPIs
-- [x] Shipment management
-- [x] Basic payments
-- [x] **Incentives Optimizer (Epic 5)** ← HERO FEATURE
+- [x] Shipment management with e-BRC
+- [x] Payment tracking with aging
+- [x] Incentives Optimizer (Hero Feature)
 
-### P1 (Important)
+### P1 (Important) - COMPLETED ✅
+- [x] e-BRC Monitoring (Epic 2)
+- [x] Receivable Aging Dashboard (Epic 3)
 - [x] GST compliance module
-- [x] Incentives calculator
 - [x] Forex management
-- [x] AI assistant
-- [ ] e-BRC Monitoring (Epic 2 enhancement)
-- [ ] Receivable Aging Dashboard (Epic 3 enhancement)
+- [x] IDOR Protection
+- [x] PII Masking
 
-### P2 (Enhancement)
+### P2 (Enhancement) - PENDING
+- [ ] JWT Blacklisting (logout/password change)
+- [ ] Async Export (CSV + Excel + PDF) for 5000+ rows
 - [ ] Document OCR with file upload
 - [ ] Bulk invoice upload
 - [ ] WhatsApp notifications
-- [ ] Advanced analytics
-- [ ] Export reports (PDF generation)
 - [ ] Migration Architecture Document (Spring Boot/PostgreSQL)
 
 ---
 
-## Test Reports
-- **iteration_1.json:** Initial test - 95.7% backend, 90% frontend
-- **iteration_2.json:** Epic 5 complete - 100% backend (27/27), 100% frontend
+## Test Credentials
+```
+Email: test@moradabad.com
+Password: Test@123
+```
+
+## Sample Data
+- 4 shipments (EXP-2024-001 through 004)
+- Total exports: ₹32 Lakhs
+- Potential incentives: ₹85,250
+- All in 0-30 day aging bucket (current)
 
 ---
 
 ## Technical Debt
-- Session management optimization for longer sessions
-- Add proper error boundaries in React
-- Implement caching for forex rates
-- Add unit tests for critical backend functions
-- Minor console warnings about chart dimensions (non-blocking)
+- Session management for longer sessions
+- Error boundaries in React
+- Caching for forex rates
+- Unit tests for remaining backend functions

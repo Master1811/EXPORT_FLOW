@@ -166,6 +166,23 @@ HS_CODE_DATABASE = {
     "7323": {"description": "Table/kitchen articles", "rodtep": 3.0, "rosctl": 0, "drawback": 1.2, "chapter": "73"},
     "7324": {"description": "Sanitary ware", "rodtep": 3.0, "rosctl": 0, "drawback": 1.2, "chapter": "73"},
     "7326": {"description": "Other iron/steel articles", "rodtep": 2.5, "rosctl": 0, "drawback": 1.0, "chapter": "73"},
+    
+    # Chapter 74 - Copper and copper articles (Moradabad Handicrafts)
+    "7418": {"description": "Copper utensils, table/kitchen articles", "rodtep": 2.0, "rosctl": 0, "drawback": 0.8, "chapter": "74"},
+    "74181022": {"description": "Utensils of Copper (Bottles, Mugs, Jugs)", "rodtep": 2.0, "rosctl": 0, "drawback": 0.8, "chapter": "74"},
+    "7419": {"description": "Other copper articles", "rodtep": 2.5, "rosctl": 0, "drawback": 1.0, "chapter": "74"},
+    "74198030": {"description": "Artware/Handicrafts of Brass (Moradabad Specialty)", "rodtep": 3.0, "rosctl": 0, "drawback": 1.2, "chapter": "74"},
+    
+    # Chapter 68 - Stone articles (Marble, Decorative Stone)
+    "6802": {"description": "Worked monumental/building stone", "rodtep": 1.5, "rosctl": 0, "drawback": 0.6, "chapter": "68"},
+    "68022190": {"description": "Worked Marble/Stone Articles (Fusion Planters/Vases)", "rodtep": 2.0, "rosctl": 0, "drawback": 0.8, "chapter": "68"},
+    
+    # Chapter 94 - Furniture (Iron/Metal) - Moradabad style
+    "94032010": {"description": "Iron/Metal Furniture (Chairs, Tables, Frames)", "rodtep": 1.0, "rosctl": 0, "drawback": 0.5, "chapter": "94"},
+    "94055000": {"description": "Non-Electrical Lamps & Lighting (Candle Stands/Lanterns)", "rodtep": 2.0, "rosctl": 0, "drawback": 0.8, "chapter": "94"},
+    
+    # Chapter 73 - Iron Handicraft (Moradabad Metal Planters)
+    "73269099": {"description": "Iron Handicraft Planters & Garden Accessories", "rodtep": 1.5, "rosctl": 0, "drawback": 0.6, "chapter": "73"},
 }
 
 # Chapter-level default rates (for codes not in database)

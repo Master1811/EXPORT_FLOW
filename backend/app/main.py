@@ -23,6 +23,7 @@ from .credit.router import router as credit_router
 from .jobs.router import router as jobs_router
 from .notifications.router import router as notifications_router
 from .exports.router import router as exports_router
+from .audit.router import router as audit_router
 
 # Configure logging
 logging.basicConfig(
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs_router, prefix="/api")
     app.include_router(notifications_router, prefix="/api")
     app.include_router(exports_router, prefix="/api")
+    app.include_router(audit_router, prefix="/api")
 
     # Add CORS middleware
     app.add_middleware(

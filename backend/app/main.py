@@ -24,6 +24,7 @@ from .jobs.router import router as jobs_router
 from .notifications.router import router as notifications_router
 from .exports.router import router as exports_router
 from .audit.router import router as audit_router
+from .security.router import router as security_router
 
 # Configure logging
 logging.basicConfig(

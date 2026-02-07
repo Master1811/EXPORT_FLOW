@@ -6,15 +6,24 @@ import csv
 import io
 import os
 import asyncio
+import threading
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from fastapi import BackgroundTasks
-from ..core.database import db
+from ..core.database import get_database
 from ..common.utils import generate_id, now_iso
 
 # Export directory
 EXPORT_DIR = "/tmp/exports"
 os.makedirs(EXPORT_DIR, exist_ok=True)
+
+# Global db reference for background tasks
+_db = None
+
+async def get_db():
+    global _db
+    if _db is None:
+        _db = await get_database()
+    return _db
 
 class ExportJob:
     """Track export job status"""

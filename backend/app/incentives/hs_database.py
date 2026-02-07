@@ -287,25 +287,36 @@ CHAPTER_DEFAULTS = {
 
 def get_hs_code_info(hs_code: str) -> dict:
     """Get incentive rates for a given HS code"""
-    # Clean the HS code
-    hs_code = hs_code.replace(".", "").replace(" ", "")[:4]
+    # Clean the HS code - remove dots and spaces
+    clean_code = hs_code.replace(".", "").replace(" ", "")
     
-    # Try exact match first
-    if hs_code in HS_CODE_DATABASE:
-        data = HS_CODE_DATABASE[hs_code]
+    # Try full code match first (for 8-digit codes like 74198030)
+    if clean_code in HS_CODE_DATABASE:
+        data = HS_CODE_DATABASE[clean_code]
         return {
-            "hs_code": hs_code,
+            "hs_code": clean_code,
+            "found": True,
+            "exact_match": True,
+            **data
+        }
+    
+    # Try 4-digit code match
+    code_4digit = clean_code[:4]
+    if code_4digit in HS_CODE_DATABASE:
+        data = HS_CODE_DATABASE[code_4digit]
+        return {
+            "hs_code": clean_code,
             "found": True,
             "exact_match": True,
             **data
         }
     
     # Try chapter default
-    chapter = hs_code[:2]
+    chapter = clean_code[:2]
     if chapter in CHAPTER_DEFAULTS:
         data = CHAPTER_DEFAULTS[chapter]
         return {
-            "hs_code": hs_code,
+            "hs_code": clean_code,
             "found": True,
             "exact_match": False,
             "description": f"Chapter {chapter} - {data['category']}",
@@ -316,7 +327,7 @@ def get_hs_code_info(hs_code: str) -> dict:
         }
     
     return {
-        "hs_code": hs_code,
+        "hs_code": clean_code,
         "found": False,
         "exact_match": False,
         "description": "Unknown HS Code",

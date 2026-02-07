@@ -247,7 +247,12 @@ export default function PaymentsPage() {
       </div>
 
       {/* Overview Tab */}
-      {activeTab === 'overview' && agingDashboard && (
+      {activeTab === 'overview' && (
+        <>
+          {/* Check for empty state */}
+          {shipments.length === 0 ? (
+            <EmptyState type="payments" />
+          ) : agingDashboard && (
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

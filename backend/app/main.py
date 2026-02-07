@@ -22,6 +22,7 @@ from .connectors.router import router as connectors_router
 from .credit.router import router as credit_router
 from .jobs.router import router as jobs_router
 from .notifications.router import router as notifications_router
+from .exports.router import router as exports_router
 
 # Configure logging
 logging.basicConfig(

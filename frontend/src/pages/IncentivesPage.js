@@ -137,6 +137,11 @@ export default function IncentivesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in" data-testid="incentives-page">
+      {/* Empty State Check */}
+      {shipments.length === 0 ? (
+        <EmptyState type="incentives" />
+      ) : (
+        <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

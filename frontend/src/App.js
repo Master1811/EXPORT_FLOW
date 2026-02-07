@@ -18,6 +18,7 @@ import CreditPage from './pages/CreditPage';
 import ConnectorsPage from './pages/ConnectorsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
+import AuditLogsPage from './pages/AuditLogsPage';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {

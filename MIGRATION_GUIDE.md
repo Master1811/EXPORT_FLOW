@@ -69,8 +69,8 @@ This document provides a comprehensive roadmap for migrating the **ExportFlow** 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        FRONTEND                              │
-│   Next.js 14 (App Router) + TailwindCSS + Shadcn UI         │
-│   (Optional: Keep React if preferred)                        │
+│   Next.js 15 (App Router) + TailwindCSS + Shadcn UI         │
+│   Server Components + Server Actions + Edge Runtime          │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -86,6 +86,170 @@ This document provides a comprehensive roadmap for migrating the **ExportFlow** 
 │   PostgreSQL 16 + Row-Level Security (RLS)                  │
 │   + pgvector (for AI embeddings) + S3 (file storage)        │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### Next.js 15 Frontend Structure
+```
+/frontend
+├── app/
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   │   └── layout.tsx
+│   ├── (dashboard)/
+│   │   ├── dashboard/page.tsx
+│   │   ├── shipments/
+│   │   │   ├── page.tsx
+│   │   │   ├── [id]/page.tsx
+│   │   │   └── new/page.tsx
+│   │   ├── payments/page.tsx
+│   │   ├── incentives/page.tsx
+│   │   ├── connectors/page.tsx
+│   │   └── layout.tsx
+│   ├── (marketing)/
+│   │   ├── page.tsx          # Landing page
+│   │   ├── pricing/page.tsx
+│   │   └── layout.tsx
+│   ├── api/
+│   │   └── auth/[...nextauth]/route.ts
+│   ├── layout.tsx
+│   └── globals.css
+├── components/
+│   ├── ui/                   # Shadcn components
+│   ├── dashboard/
+│   │   ├── DashboardLayout.tsx
+│   │   ├── StatCard.tsx
+│   │   └── QuickActions.tsx
+│   ├── shipments/
+│   │   ├── ShipmentTable.tsx
+│   │   ├── ShipmentForm.tsx
+│   │   └── EbrcDialog.tsx
+│   └── shared/
+│       ├── EmptyState.tsx
+│       └── LoadingSpinner.tsx
+├── lib/
+│   ├── api.ts                # API client
+│   ├── auth.ts               # Auth utilities
+│   └── utils.ts
+├── hooks/
+│   ├── useShipments.ts
+│   ├── usePayments.ts
+│   └── useAuth.ts
+├── types/
+│   ├── shipment.ts
+│   ├── payment.ts
+│   └── user.ts
+└── middleware.ts             # Auth middleware
+```
+
+### Next.js Key Patterns
+
+#### Server Components (Default)
+```tsx
+// app/(dashboard)/shipments/page.tsx
+import { getServerSession } from 'next-auth';
+import { ShipmentTable } from '@/components/shipments/ShipmentTable';
+import { fetchShipments } from '@/lib/api';
+
+export default async function ShipmentsPage() {
+  const session = await getServerSession();
+  const shipments = await fetchShipments(session?.accessToken);
+  
+  return (
+    <div className="space-y-6">
+      <h1 className="text-4xl font-bold">Shipments</h1>
+      <ShipmentTable shipments={shipments} />
+    </div>
+  );
+}
+```
+
+#### Client Components (Interactive)
+```tsx
+// components/shipments/ShipmentForm.tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createShipment } from '@/lib/actions';
+
+export function ShipmentForm() {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  
+  async function handleSubmit(formData: FormData) {
+    setPending(true);
+    await createShipment(formData);
+    router.push('/shipments');
+    router.refresh();
+  }
+  
+  return (
+    <form action={handleSubmit}>
+      {/* Form fields */}
+    </form>
+  );
+}
+```
+
+#### Server Actions
+```tsx
+// lib/actions.ts
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+
+export async function createShipment(formData: FormData) {
+  const session = await getServerSession();
+  
+  const response = await fetch(`${process.env.API_URL}/api/shipments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.accessToken}`,
+    },
+    body: JSON.stringify(Object.fromEntries(formData)),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to create shipment');
+  }
+  
+  revalidatePath('/shipments');
+  return response.json();
+}
+```
+
+#### Middleware (Auth Protection)
+```tsx
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request });
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
+                     request.nextUrl.pathname.startsWith('/register');
+  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard') ||
+                      request.nextUrl.pathname.startsWith('/shipments') ||
+                      request.nextUrl.pathname.startsWith('/payments');
+  
+  if (isDashboard && !token) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  if (isAuthPage && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+  
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};
 ```
 
 ### Target Module Structure (Spring Boot)

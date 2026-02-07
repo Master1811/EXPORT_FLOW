@@ -12,7 +12,7 @@ async def create_payment(data: PaymentCreate, user: dict = Depends(get_current_u
 
 @router.get("/shipment/{shipment_id}", response_model=List[PaymentResponse])
 async def get_shipment_payments(shipment_id: str, user: dict = Depends(get_current_user)):
-    return await PaymentService.get_by_shipment(shipment_id)
+    return await PaymentService.get_by_shipment(shipment_id, user)
 
 @router.get("/receivables")
 async def get_receivables(user: dict = Depends(get_current_user)):
@@ -21,3 +21,8 @@ async def get_receivables(user: dict = Depends(get_current_user)):
 @router.get("/receivables/aging")
 async def get_receivables_aging(user: dict = Depends(get_current_user)):
     return await PaymentService.get_aging(user)
+
+@router.get("/receivables/aging-dashboard")
+async def get_aging_dashboard(user: dict = Depends(get_current_user)):
+    """Get comprehensive receivables aging dashboard with buckets and alerts"""
+    return await PaymentService.get_aging_dashboard(user)

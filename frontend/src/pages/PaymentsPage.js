@@ -61,8 +61,8 @@ export default function PaymentsPage() {
   const fetchData = async () => {
     try {
       const [receivablesRes, agingRes, shipmentsRes] = await Promise.all([
-        api.get('/receivables'),
-        api.get('/receivables/aging-dashboard'),
+        api.get('/payments/receivables'),
+        api.get('/payments/receivables/aging-dashboard'),
         api.get('/shipments')
       ]);
       setReceivables(receivablesRes.data);

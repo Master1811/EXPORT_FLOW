@@ -77,7 +77,8 @@ export default function ShipmentsPage() {
   const [ebrcFormData, setEbrcFormData] = useState({
     ebrc_status: 'pending',
     ebrc_filed_date: '',
-    ebrc_number: ''
+    ebrc_number: '',
+    rejection_reason: ''
   });
   const [submitting, setSubmitting] = useState(false);
 

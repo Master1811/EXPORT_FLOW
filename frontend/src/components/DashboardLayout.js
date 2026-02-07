@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, api } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { 
   Ship, LayoutDashboard, Package, FileText, CreditCard, 
@@ -28,9 +28,16 @@ export const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Call backend logout to blacklist token
+      await api.post('/auth/logout');
+    } catch (error) {
+      // Continue with logout even if API call fails
+      console.error('Logout API error:', error);
+    }
     logout();
-    navigate('/login');
+    navigate('/');  // Navigate to landing page instead of login
   };
 
   return (

@@ -50,6 +50,8 @@ class ExportService:
         filters: Optional[dict] = None
     ) -> dict:
         """Create a new export job and start background processing"""
+        from ..core.database import db
+        
         job_id = generate_id()
         company_id = user.get("company_id", user["id"])
         
@@ -72,13 +74,20 @@ class ExportService:
         }
         await db.export_jobs.insert_one(job_doc)
         
-        # Start background task
-        asyncio.create_task(ExportService._process_export(job_id, export_type, format, company_id, filters))
+        # Process synchronously (simpler and more reliable than background tasks)
+        # For true async, you'd use Celery or similar
+        try:
+            await ExportService._process_export(job_id, export_type, format, company_id, filters)
+        except Exception as e:
+            await ExportService._update_job(job_id, "failed", 0, 0, None, None, str(e))
+        
+        # Get final status
+        job = await db.export_jobs.find_one({"id": job_id}, {"_id": 0})
         
         return {
             "job_id": job_id,
-            "status": "pending",
-            "message": f"Export job created. Processing {export_type} data to {format.upper()}..."
+            "status": job.get("status", "processing"),
+            "message": f"Export job {'completed' if job.get('status') == 'completed' else 'processing'}. Processing {export_type} data to {format.upper()}..."
         }
 
     @staticmethod

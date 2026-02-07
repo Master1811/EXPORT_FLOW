@@ -93,6 +93,8 @@ class ExportService:
     @staticmethod
     async def get_job_status(job_id: str, user: dict) -> dict:
         """Get export job status"""
+        from ..core.database import db
+        
         job = await db.export_jobs.find_one({
             "id": job_id,
             "company_id": user.get("company_id", user["id"])
@@ -116,6 +118,8 @@ class ExportService:
     @staticmethod
     async def get_file_path(job_id: str, user: dict) -> Optional[str]:
         """Get file path for download"""
+        from ..core.database import db
+        
         job = await db.export_jobs.find_one({
             "id": job_id,
             "company_id": user.get("company_id", user["id"]),
@@ -128,7 +132,9 @@ class ExportService:
 
     @staticmethod
     async def _process_export(job_id: str, export_type: str, format: str, company_id: str, filters: dict):
-        """Process export in background"""
+        """Process export"""
+        from ..core.database import db
+        
         try:
             # Fetch data based on export type
             data = await ExportService._fetch_data(export_type, company_id, filters, job_id)

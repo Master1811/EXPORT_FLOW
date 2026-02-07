@@ -261,39 +261,54 @@ class AIService:
             outstanding = s.get("total_value", 0) - paid
             
             if outstanding > 0:
-                created = datetime.fromisoformat(s["created_at"].replace("Z", "+00:00"))
-                days = (now - created).days
-                
-                if days > 60:
-                    alerts.append({
-                        "severity": "high",
-                        "type": "payment_delay",
-                        "message": f"{s.get('buyer_name')} - ₹{outstanding:,.0f} overdue by {days} days",
-                        "action": "Follow up immediately",
-                        "shipment_id": s["id"]
-                    })
+                try:
+                    created_str = s.get("created_at", "")
+                    if created_str:
+                        # Handle both timezone-aware and naive datetime strings
+                        if "+" not in created_str and "Z" not in created_str:
+                            created_str += "+00:00"
+                        created = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                        days = (now - created).days
+                        
+                        if days > 60:
+                            alerts.append({
+                                "severity": "high",
+                                "type": "payment_delay",
+                                "message": f"{s.get('buyer_name')} - ₹{outstanding:,.0f} overdue by {days} days",
+                                "action": "Follow up immediately",
+                                "shipment_id": s["id"]
+                            })
+                except Exception:
+                    pass
         
         # Check e-BRC deadlines
         for s in shipments:
             if s.get("ebrc_status") == "pending" and s.get("ebrc_due_date"):
-                due = datetime.fromisoformat(s["ebrc_due_date"].replace("Z", "+00:00"))
-                days_remaining = (due - now).days
-                
-                if days_remaining < 0:
-                    alerts.append({
-                        "severity": "high",
-                        "type": "compliance",
-                        "message": f"e-BRC OVERDUE for {s.get('shipment_number')} - {abs(days_remaining)} days past deadline",
-                        "action": "File immediately",
-                        "shipment_id": s["id"]
-                    })
-                elif days_remaining <= 15:
-                    alerts.append({
-                        "severity": "medium",
-                        "type": "compliance",
-                        "message": f"e-BRC due in {days_remaining} days for {s.get('shipment_number')}",
-                        "action": "Prepare filing",
-                        "shipment_id": s["id"]
-                    })
+                try:
+                    due_str = s.get("ebrc_due_date", "")
+                    if due_str:
+                        if "+" not in due_str and "Z" not in due_str:
+                            due_str += "+00:00"
+                        due = datetime.fromisoformat(due_str.replace("Z", "+00:00"))
+                        days_remaining = (due - now).days
+                        
+                        if days_remaining < 0:
+                            alerts.append({
+                                "severity": "high",
+                                "type": "compliance",
+                                "message": f"e-BRC OVERDUE for {s.get('shipment_number')} - {abs(days_remaining)} days past deadline",
+                                "action": "File immediately",
+                                "shipment_id": s["id"]
+                            })
+                        elif days_remaining <= 15:
+                            alerts.append({
+                                "severity": "medium",
+                                "type": "compliance",
+                                "message": f"e-BRC due in {days_remaining} days for {s.get('shipment_number')}",
+                                "action": "Prepare filing",
+                                "shipment_id": s["id"]
+                            })
+                except Exception:
+                    pass
         
         return {"alerts": alerts}

@@ -563,10 +563,17 @@ export default function ShipmentsPage() {
                 <div className="flex items-center justify-center py-12">
                   <RefreshCw className="w-6 h-6 animate-spin text-primary" />
                 </div>
+              ) : shipments.length === 0 ? (
+                <div className="p-6">
+                  <EmptyState 
+                    type="shipments" 
+                    onAction={() => setCreateDialogOpen(true)}
+                  />
+                </div>
               ) : filteredShipments.length === 0 ? (
                 <div className="text-center py-12">
                   <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No shipments found</p>
+                  <p className="text-muted-foreground">No shipments match your search</p>
                 </div>
               ) : (
                 <Table>

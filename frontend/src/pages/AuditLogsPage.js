@@ -327,7 +327,7 @@ export default function AuditLogsPage() {
                   <SelectValue placeholder="Action Type" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
-                  <SelectItem value="">All Actions</SelectItem>
+                  <SelectItem value="all">All Actions</SelectItem>
                   <SelectItem value="view">View</SelectItem>
                   <SelectItem value="edit">Edit</SelectItem>
                   <SelectItem value="create">Create</SelectItem>
@@ -344,7 +344,7 @@ export default function AuditLogsPage() {
                   <SelectValue placeholder="Resource Type" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
-                  <SelectItem value="">All Resources</SelectItem>
+                  <SelectItem value="all">All Resources</SelectItem>
                   <SelectItem value="shipment">Shipment</SelectItem>
                   <SelectItem value="payment">Payment</SelectItem>
                   <SelectItem value="user">User</SelectItem>

@@ -162,11 +162,13 @@ class ExportService:
     @staticmethod
     async def _fetch_data(export_type: str, company_id: str, filters: dict, job_id: str) -> List[dict]:
         """Fetch data from database"""
+        from ..core.database import db
+        
         await ExportService._update_job(job_id, "processing", 10)
         
         if export_type == "shipments":
             query = {"company_id": company_id}
-            if filters.get("status"):
+            if filters and filters.get("status"):
                 query["status"] = filters["status"]
             data = await db.shipments.find(query, {"_id": 0, "password": 0}).to_list(10000)
             

@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
+import EmptyState from '../components/EmptyState';
 
 const CHART_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
 

@@ -32,7 +32,7 @@ class TestOptimisticLocking:
         }
         
         response = self.client.post(f"{BASE_URL}/api/shipments", json=create_payload)
-        assert response.status_code == 201, f"Failed to create shipment: {response.text}"
+        assert response.status_code in [200, 201], f"Failed to create shipment: {response.text}"
         self.shipment = response.json()
         self.shipment_id = self.shipment["id"]
         

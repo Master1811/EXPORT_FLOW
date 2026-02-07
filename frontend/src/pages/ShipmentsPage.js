@@ -16,8 +16,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
 import {
-  Package, Plus, Search, Filter, Eye, Edit, Trash2,
-  Ship, MapPin, Calendar, DollarSign, RefreshCw, Loader2
+  Package, Plus, Search, Filter, Edit, Trash2, Ship, MapPin, 
+  RefreshCw, Loader2, FileCheck, AlertTriangle, Clock, CheckCircle,
+  XCircle, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,21 +26,34 @@ const STATUS_COLORS = {
   draft: 'bg-muted text-muted-foreground',
   confirmed: 'bg-primary/20 text-primary',
   shipped: 'bg-amber/20 text-amber',
+  in_transit: 'bg-amber/20 text-amber',
   delivered: 'bg-neon/20 text-neon',
   completed: 'bg-neon/20 text-neon',
   cancelled: 'bg-destructive/20 text-destructive'
 };
 
+const EBRC_STATUS_COLORS = {
+  pending: 'bg-amber/20 text-amber border-amber/30',
+  filed: 'bg-primary/20 text-primary border-primary/30',
+  approved: 'bg-neon/20 text-neon border-neon/30',
+  rejected: 'bg-destructive/20 text-destructive border-destructive/30'
+};
+
 const INCOTERMS = ['FOB', 'CIF', 'EXW', 'FCA', 'CFR', 'DAP', 'DDP'];
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'JPY', 'CNY', 'SGD'];
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'JPY', 'CNY', 'SGD', 'INR'];
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([]);
+  const [ebrcDashboard, setEbrcDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('shipments');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [ebrcDialogOpen, setEbrcDialogOpen] = useState(false);
+  const [selectedShipment, setSelectedShipment] = useState(null);
   const [editingShipment, setEditingShipment] = useState(null);
+  const [showSensitive, setShowSensitive] = useState({});
   const [formData, setFormData] = useState({
     shipment_number: '',
     buyer_name: '',
@@ -51,22 +65,35 @@ export default function ShipmentsPage() {
     total_value: '',
     status: 'draft',
     expected_ship_date: '',
+    actual_ship_date: '',
     product_description: '',
-    hs_codes: ''
+    hs_codes: '',
+    buyer_email: '',
+    buyer_phone: '',
+    buyer_pan: '',
+    buyer_bank_account: ''
+  });
+  const [ebrcFormData, setEbrcFormData] = useState({
+    ebrc_status: 'pending',
+    ebrc_filed_date: '',
+    ebrc_number: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchShipments();
+    fetchData();
   }, [statusFilter]);
 
-  const fetchShipments = async () => {
+  const fetchData = async () => {
     try {
-      const params = statusFilter !== 'all' ? { status: statusFilter } : {};
-      const response = await api.get('/shipments', { params });
-      setShipments(response.data);
+      const [shipmentsRes, ebrcRes] = await Promise.all([
+        api.get('/shipments', { params: statusFilter !== 'all' ? { status: statusFilter } : {} }),
+        api.get('/shipments/ebrc-dashboard')
+      ]);
+      setShipments(shipmentsRes.data);
+      setEbrcDashboard(ebrcRes.data);
     } catch (error) {
-      toast.error('Failed to fetch shipments');
+      toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -82,18 +109,10 @@ export default function ShipmentsPage() {
 
   const resetForm = () => {
     setFormData({
-      shipment_number: '',
-      buyer_name: '',
-      buyer_country: '',
-      destination_port: '',
-      origin_port: '',
-      incoterm: 'FOB',
-      currency: 'USD',
-      total_value: '',
-      status: 'draft',
-      expected_ship_date: '',
-      product_description: '',
-      hs_codes: ''
+      shipment_number: '', buyer_name: '', buyer_country: '', destination_port: '',
+      origin_port: '', incoterm: 'FOB', currency: 'USD', total_value: '', status: 'draft',
+      expected_ship_date: '', actual_ship_date: '', product_description: '', hs_codes: '',
+      buyer_email: '', buyer_phone: '', buyer_pan: '', buyer_bank_account: ''
     });
     setEditingShipment(null);
   };
@@ -110,15 +129,15 @@ export default function ShipmentsPage() {
 
       if (editingShipment) {
         await api.put(`/shipments/${editingShipment.id}`, data);
-        toast.success('Shipment updated successfully');
+        toast.success('Shipment updated');
       } else {
         await api.post('/shipments', data);
-        toast.success('Shipment created successfully');
+        toast.success('Shipment created');
       }
       
       setCreateDialogOpen(false);
       resetForm();
-      fetchShipments();
+      fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Operation failed');
     } finally {
@@ -139,21 +158,60 @@ export default function ShipmentsPage() {
       total_value: shipment.total_value.toString(),
       status: shipment.status,
       expected_ship_date: shipment.expected_ship_date || '',
+      actual_ship_date: shipment.actual_ship_date || '',
       product_description: shipment.product_description || '',
-      hs_codes: shipment.hs_codes?.join(', ') || ''
+      hs_codes: shipment.hs_codes?.join(', ') || '',
+      buyer_email: shipment.buyer_email || '',
+      buyer_phone: shipment.buyer_phone || '',
+      buyer_pan: shipment.buyer_pan || '',
+      buyer_bank_account: shipment.buyer_bank_account || ''
     });
     setCreateDialogOpen(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this shipment?')) return;
+    if (!window.confirm('Delete this shipment?')) return;
     try {
       await api.delete(`/shipments/${id}`);
       toast.success('Shipment deleted');
-      fetchShipments();
+      fetchData();
     } catch (error) {
-      toast.error('Failed to delete shipment');
+      toast.error('Failed to delete');
     }
+  };
+
+  const openEbrcDialog = (shipment) => {
+    setSelectedShipment(shipment);
+    setEbrcFormData({
+      ebrc_status: shipment.ebrc_status || 'pending',
+      ebrc_filed_date: shipment.ebrc_filed_date || '',
+      ebrc_number: shipment.ebrc_number || ''
+    });
+    setEbrcDialogOpen(true);
+  };
+
+  const handleEbrcSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api.put(`/shipments/${selectedShipment.id}/ebrc`, ebrcFormData);
+      toast.success('e-BRC status updated');
+      setEbrcDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update e-BRC status');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleSensitive = (shipmentId) => {
+    setShowSensitive(prev => ({ ...prev, [shipmentId]: !prev[shipmentId] }));
+  };
+
+  const maskValue = (value) => {
+    if (!value) return '—';
+    return value.includes('*') ? value : value;
   };
 
   const filteredShipments = shipments.filter(s =>
@@ -162,8 +220,9 @@ export default function ShipmentsPage() {
   );
 
   const formatCurrency = (value, currency) => {
-    const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', AED: 'AED ', JPY: '¥', CNY: '¥', SGD: 'S$' };
-    return `${symbols[currency] || ''}${value.toLocaleString()}`;
+    const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', AED: 'AED ' };
+    if (currency === 'INR' && value >= 100000) return `₹${(value/100000).toFixed(2)}L`;
+    return `${symbols[currency] || ''}${value?.toLocaleString() || 0}`;
   };
 
   return (
@@ -172,13 +231,12 @@ export default function ShipmentsPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="font-heading text-4xl text-foreground">Shipments</h1>
-          <p className="text-muted-foreground mt-1">Manage your export shipments</p>
+          <p className="text-muted-foreground mt-1">Manage shipments and e-BRC compliance</p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={(open) => { setCreateDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90" data-testid="create-shipment-btn">
-              <Plus className="w-4 h-4 mr-2" />
-              New Shipment
+              <Plus className="w-4 h-4 mr-2" /> New Shipment
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
@@ -186,190 +244,120 @@ export default function ShipmentsPage() {
               <DialogTitle className="font-heading text-xl">
                 {editingShipment ? 'Edit Shipment' : 'Create New Shipment'}
               </DialogTitle>
-              <DialogDescription>Enter shipment details below</DialogDescription>
+              <DialogDescription>Enter shipment details</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shipment_number">Shipment Number *</Label>
-                  <Input
-                    id="shipment_number"
-                    name="shipment_number"
-                    value={formData.shipment_number}
-                    onChange={handleInputChange}
-                    placeholder="SH-2024-001"
-                    required
-                    className="bg-background"
-                    data-testid="shipment-number-input"
-                  />
+                  <Label>Shipment Number *</Label>
+                  <Input name="shipment_number" value={formData.shipment_number} onChange={handleInputChange} required className="bg-background" data-testid="shipment-number-input" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="buyer_name">Buyer Name *</Label>
-                  <Input
-                    id="buyer_name"
-                    name="buyer_name"
-                    value={formData.buyer_name}
-                    onChange={handleInputChange}
-                    placeholder="ABC Corp"
-                    required
-                    className="bg-background"
-                    data-testid="buyer-name-input"
-                  />
+                  <Label>Buyer Name *</Label>
+                  <Input name="buyer_name" value={formData.buyer_name} onChange={handleInputChange} required className="bg-background" data-testid="buyer-name-input" />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="buyer_country">Buyer Country *</Label>
-                  <Input
-                    id="buyer_country"
-                    name="buyer_country"
-                    value={formData.buyer_country}
-                    onChange={handleInputChange}
-                    placeholder="USA"
-                    required
-                    className="bg-background"
-                    data-testid="buyer-country-input"
-                  />
+                  <Label>Buyer Country *</Label>
+                  <Input name="buyer_country" value={formData.buyer_country} onChange={handleInputChange} required className="bg-background" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="origin_port">Origin Port *</Label>
-                  <Input
-                    id="origin_port"
-                    name="origin_port"
-                    value={formData.origin_port}
-                    onChange={handleInputChange}
-                    placeholder="INNSA (Nhava Sheva)"
-                    required
-                    className="bg-background"
-                    data-testid="origin-port-input"
-                  />
+                  <Label>Origin Port *</Label>
+                  <Input name="origin_port" value={formData.origin_port} onChange={handleInputChange} required className="bg-background" />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="destination_port">Destination Port *</Label>
-                  <Input
-                    id="destination_port"
-                    name="destination_port"
-                    value={formData.destination_port}
-                    onChange={handleInputChange}
-                    placeholder="USLAX (Los Angeles)"
-                    required
-                    className="bg-background"
-                    data-testid="destination-port-input"
-                  />
+                  <Label>Destination Port *</Label>
+                  <Input name="destination_port" value={formData.destination_port} onChange={handleInputChange} required className="bg-background" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="incoterm">Incoterm</Label>
+                  <Label>Incoterm</Label>
                   <Select value={formData.incoterm} onValueChange={(v) => handleSelectChange('incoterm', v)}>
-                    <SelectTrigger className="bg-background" data-testid="incoterm-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INCOTERMS.map(term => (
-                        <SelectItem key={term} value={term}>{term}</SelectItem>
-                      ))}
-                    </SelectContent>
+                    <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent>{INCOTERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
-
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
+                  <Label>Currency</Label>
                   <Select value={formData.currency} onValueChange={(v) => handleSelectChange('currency', v)}>
-                    <SelectTrigger className="bg-background" data-testid="currency-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map(curr => (
-                        <SelectItem key={curr} value={curr}>{curr}</SelectItem>
-                      ))}
-                    </SelectContent>
+                    <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total_value">Total Value *</Label>
-                  <Input
-                    id="total_value"
-                    name="total_value"
-                    type="number"
-                    value={formData.total_value}
-                    onChange={handleInputChange}
-                    placeholder="50000"
-                    required
-                    min="0"
-                    step="0.01"
-                    className="bg-background"
-                    data-testid="total-value-input"
-                  />
+                  <Label>Total Value *</Label>
+                  <Input name="total_value" type="number" value={formData.total_value} onChange={handleInputChange} required className="bg-background" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label>Status</Label>
                   <Select value={formData.status} onValueChange={(v) => handleSelectChange('status', v)}>
-                    <SelectTrigger className="bg-background" data-testid="status-select">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Draft</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="in_transit">In Transit</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="expected_ship_date">Expected Ship Date</Label>
-                  <Input
-                    id="expected_ship_date"
-                    name="expected_ship_date"
-                    type="date"
-                    value={formData.expected_ship_date}
-                    onChange={handleInputChange}
-                    className="bg-background"
-                    data-testid="ship-date-input"
-                  />
+                  <Label>Expected Ship Date</Label>
+                  <Input name="expected_ship_date" type="date" value={formData.expected_ship_date} onChange={handleInputChange} className="bg-background" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="hs_codes">HS Codes (comma separated)</Label>
-                  <Input
-                    id="hs_codes"
-                    name="hs_codes"
-                    value={formData.hs_codes}
-                    onChange={handleInputChange}
-                    placeholder="8471, 8542"
-                    className="bg-background"
-                    data-testid="hs-codes-input"
-                  />
+                  <Label>Actual Ship Date</Label>
+                  <Input name="actual_ship_date" type="date" value={formData.actual_ship_date} onChange={handleInputChange} className="bg-background" />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product_description">Product Description</Label>
-                <Input
-                  id="product_description"
-                  name="product_description"
-                  value={formData.product_description}
-                  onChange={handleInputChange}
-                  placeholder="Electronic components and accessories"
-                  className="bg-background"
-                  data-testid="product-description-input"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>HS Codes (comma separated)</Label>
+                  <Input name="hs_codes" value={formData.hs_codes} onChange={handleInputChange} placeholder="7419, 9405" className="bg-background" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Product Description</Label>
+                  <Input name="product_description" value={formData.product_description} onChange={handleInputChange} className="bg-background" />
+                </div>
+              </div>
+              
+              {/* Buyer Contact (PII) */}
+              <div className="border-t border-border pt-4 mt-4">
+                <p className="text-sm text-muted-foreground mb-3">Buyer Contact (Sensitive - will be masked)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Buyer Email</Label>
+                    <Input name="buyer_email" type="email" value={formData.buyer_email} onChange={handleInputChange} className="bg-background" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Buyer Phone</Label>
+                    <Input name="buyer_phone" value={formData.buyer_phone} onChange={handleInputChange} className="bg-background" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Buyer PAN</Label>
+                    <Input name="buyer_pan" value={formData.buyer_pan} onChange={handleInputChange} placeholder="ABCDE1234F" className="bg-background" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Buyer Bank Account</Label>
+                    <Input name="buyer_bank_account" value={formData.buyer_bank_account} onChange={handleInputChange} className="bg-background" />
+                  </div>
+                </div>
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => { setCreateDialogOpen(false); resetForm(); }}>
-                  Cancel
-                </Button>
+                <Button type="button" variant="outline" onClick={() => { setCreateDialogOpen(false); resetForm(); }}>Cancel</Button>
                 <Button type="submit" disabled={submitting} data-testid="submit-shipment-btn">
                   {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {editingShipment ? 'Update' : 'Create'} Shipment
+                  {editingShipment ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
@@ -377,127 +365,330 @@ export default function ShipmentsPage() {
         </Dialog>
       </div>
 
-      {/* Filters */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search shipments..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background"
-                data-testid="search-shipments-input"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px] bg-background" data-testid="status-filter-select">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tab Navigation */}
+      <div className="flex gap-2 border-b border-border pb-2">
+        <Button variant={activeTab === 'shipments' ? 'default' : 'ghost'} onClick={() => setActiveTab('shipments')} data-testid="tab-shipments">
+          <Package className="w-4 h-4 mr-2" /> Shipments
+        </Button>
+        <Button variant={activeTab === 'ebrc' ? 'default' : 'ghost'} onClick={() => setActiveTab('ebrc')} data-testid="tab-ebrc">
+          <FileCheck className="w-4 h-4 mr-2" /> e-BRC Monitor
+        </Button>
+      </div>
 
-      {/* Shipments Table */}
-      <Card className="bg-card border-border" data-testid="shipments-table">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : filteredShipments.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No shipments found</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => setCreateDialogOpen(true)}
-              >
-                Create your first shipment
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">Shipment #</TableHead>
-                  <TableHead className="text-muted-foreground">Buyer</TableHead>
-                  <TableHead className="text-muted-foreground">Route</TableHead>
-                  <TableHead className="text-muted-foreground">Value</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredShipments.map((shipment) => (
-                  <TableRow 
-                    key={shipment.id} 
-                    className="border-border hover:bg-surface-highlight/50 cursor-pointer"
-                    data-testid={`shipment-row-${shipment.id}`}
-                  >
-                    <TableCell className="font-mono text-sm">{shipment.shipment_number}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{shipment.buyer_name}</p>
-                        <p className="text-xs text-muted-foreground">{shipment.buyer_country}</p>
+      {/* e-BRC Tab */}
+      {activeTab === 'ebrc' && ebrcDashboard && (
+        <div className="space-y-6">
+          {/* e-BRC Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="bg-card border-border" data-testid="ebrc-pending-card">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="text-2xl font-heading font-bold mt-1 text-amber">{ebrcDashboard.summary.pending_count}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatCurrency(ebrcDashboard.values.total_pending, 'INR')}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-amber" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border" data-testid="ebrc-filed-card">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Filed</p>
+                    <p className="text-2xl font-heading font-bold mt-1 text-primary">{ebrcDashboard.summary.filed_count}</p>
+                  </div>
+                  <FileCheck className="w-8 h-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border" data-testid="ebrc-approved-card">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Approved</p>
+                    <p className="text-2xl font-heading font-bold mt-1 text-neon">{ebrcDashboard.summary.approved_count}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatCurrency(ebrcDashboard.values.total_approved, 'INR')}</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-neon" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-destructive/30" data-testid="ebrc-overdue-card">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Overdue</p>
+                    <p className="text-2xl font-heading font-bold mt-1 text-destructive">{ebrcDashboard.summary.overdue_count}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatCurrency(ebrcDashboard.values.total_overdue, 'INR')}</p>
+                  </div>
+                  <AlertTriangle className="w-8 h-8 text-destructive" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Alerts */}
+          {(ebrcDashboard.alerts.overdue.length > 0 || ebrcDashboard.alerts.due_soon.length > 0) && (
+            <Card className="bg-destructive/5 border-destructive/30" data-testid="ebrc-alerts">
+              <CardHeader>
+                <CardTitle className="font-heading text-lg text-destructive flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" /> e-BRC Alerts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {ebrcDashboard.alerts.overdue.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-destructive mb-2">Overdue (Action Required)</p>
+                      <div className="space-y-2">
+                        {ebrcDashboard.alerts.overdue.map((s, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-md bg-background border border-destructive/20">
+                            <div>
+                              <p className="font-medium">{s.shipment_number}</p>
+                              <p className="text-xs text-muted-foreground">{s.buyer_name}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-mono text-sm">{formatCurrency(s.total_value, s.currency)}</p>
+                              <Badge variant="destructive">{Math.abs(s.days_remaining)} days overdue</Badge>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span>{shipment.origin_port}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span>{shipment.destination_port}</span>
+                    </div>
+                  )}
+                  {ebrcDashboard.alerts.due_soon.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-amber mb-2">Due Soon (Within 15 days)</p>
+                      <div className="space-y-2">
+                        {ebrcDashboard.alerts.due_soon.map((s, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-md bg-background border border-amber/20">
+                            <div>
+                              <p className="font-medium">{s.shipment_number}</p>
+                              <p className="text-xs text-muted-foreground">{s.buyer_name}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-mono text-sm">{formatCurrency(s.total_value, s.currency)}</p>
+                              <Badge className="bg-amber/20 text-amber">{s.days_remaining} days left</Badge>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </TableCell>
-                    <TableCell className="font-mono">
-                      {formatCurrency(shipment.total_value, shipment.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={STATUS_COLORS[shipment.status]}>
-                        {shipment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(shipment)}
-                          data-testid={`edit-shipment-${shipment.id}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(shipment.id)}
-                          className="text-destructive hover:text-destructive"
-                          data-testid={`delete-shipment-${shipment.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+
+          {/* e-BRC Status Table */}
+          <Card className="bg-card border-border" data-testid="ebrc-table">
+            <CardHeader>
+              <CardTitle className="font-heading text-lg">e-BRC Status by Shipment</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead>Shipment</TableHead>
+                    <TableHead>Buyer</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>e-BRC Status</TableHead>
+                    <TableHead>Days Remaining</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...ebrcDashboard.by_status.pending, ...ebrcDashboard.by_status.filed].slice(0, 10).map((s, i) => (
+                    <TableRow key={i} className="border-border">
+                      <TableCell className="font-mono">{s.shipment_number}</TableCell>
+                      <TableCell>{s.buyer_name}</TableCell>
+                      <TableCell className="font-mono">{formatCurrency(s.total_value, s.currency)}</TableCell>
+                      <TableCell>
+                        <Badge className={EBRC_STATUS_COLORS[s.ebrc_status]}>{s.ebrc_status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {s.days_remaining !== null ? (
+                          <span className={s.days_remaining < 0 ? 'text-destructive' : s.days_remaining < 15 ? 'text-amber' : ''}>
+                            {s.days_remaining < 0 ? `${Math.abs(s.days_remaining)} overdue` : `${s.days_remaining} days`}
+                          </span>
+                        ) : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => openEbrcDialog(s)}>Update</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Shipments Tab */}
+      {activeTab === 'shipments' && (
+        <>
+          {/* Filters */}
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Search shipments..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 bg-background" data-testid="search-shipments-input" />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px] bg-background" data-testid="status-filter-select">
+                    <Filter className="w-4 h-4 mr-2" /><SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Shipments Table */}
+          <Card className="bg-card border-border" data-testid="shipments-table">
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : filteredShipments.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No shipments found</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead>Shipment #</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Route</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>e-BRC</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredShipments.map((shipment) => (
+                      <TableRow key={shipment.id} className="border-border hover:bg-surface-highlight/50" data-testid={`shipment-row-${shipment.id}`}>
+                        <TableCell className="font-mono text-sm">{shipment.shipment_number}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{shipment.buyer_name}</p>
+                            <p className="text-xs text-muted-foreground">{shipment.buyer_country}</p>
+                            {(shipment.buyer_pan || shipment.buyer_phone) && (
+                              <button onClick={() => toggleSensitive(shipment.id)} className="flex items-center gap-1 text-xs text-primary mt-1">
+                                {showSensitive[shipment.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                {showSensitive[shipment.id] ? 'Hide' : 'Show'} details
+                              </button>
+                            )}
+                            {showSensitive[shipment.id] && (
+                              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                {shipment.buyer_pan && <p>PAN: {maskValue(shipment.buyer_pan)}</p>}
+                                {shipment.buyer_phone && <p>Phone: {maskValue(shipment.buyer_phone)}</p>}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="w-4 h-4 text-muted-foreground" />
+                            <span>{shipment.origin_port} → {shipment.destination_port}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">{formatCurrency(shipment.total_value, shipment.currency)}</TableCell>
+                        <TableCell><Badge className={STATUS_COLORS[shipment.status]}>{shipment.status}</Badge></TableCell>
+                        <TableCell>
+                          <Badge className={EBRC_STATUS_COLORS[shipment.ebrc_status || 'pending']}>
+                            {shipment.ebrc_status || 'pending'}
+                          </Badge>
+                          {shipment.ebrc_days_remaining !== null && shipment.ebrc_days_remaining < 15 && (
+                            <p className={`text-xs mt-1 ${shipment.ebrc_days_remaining < 0 ? 'text-destructive' : 'text-amber'}`}>
+                              {shipment.ebrc_days_remaining < 0 ? 'Overdue' : `${shipment.ebrc_days_remaining}d left`}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEbrcDialog(shipment)} title="Update e-BRC">
+                              <FileCheck className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(shipment)} data-testid={`edit-shipment-${shipment.id}`}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(shipment.id)} className="text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* e-BRC Update Dialog */}
+      <Dialog open={ebrcDialogOpen} onOpenChange={setEbrcDialogOpen}>
+        <DialogContent className="max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Update e-BRC Status</DialogTitle>
+            <DialogDescription>
+              {selectedShipment?.shipment_number} - {selectedShipment?.buyer_name}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEbrcSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>e-BRC Status</Label>
+              <Select value={ebrcFormData.ebrc_status} onValueChange={(v) => setEbrcFormData({...ebrcFormData, ebrc_status: v})}>
+                <SelectTrigger className="bg-background" data-testid="ebrc-status-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="filed">Filed</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {ebrcFormData.ebrc_status !== 'pending' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Filed Date</Label>
+                  <Input type="date" value={ebrcFormData.ebrc_filed_date} onChange={(e) => setEbrcFormData({...ebrcFormData, ebrc_filed_date: e.target.value})} className="bg-background" />
+                </div>
+                <div className="space-y-2">
+                  <Label>e-BRC Number</Label>
+                  <Input value={ebrcFormData.ebrc_number} onChange={(e) => setEbrcFormData({...ebrcFormData, ebrc_number: e.target.value})} placeholder="eBRC-2024-XXXXX" className="bg-background" />
+                </div>
+              </>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEbrcDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Update
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

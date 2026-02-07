@@ -663,7 +663,7 @@ export default function ShipmentsPage() {
           <form onSubmit={handleEbrcSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>e-BRC Status</Label>
-              <Select value={ebrcFormData.ebrc_status} onValueChange={(v) => setEbrcFormData({...ebrcFormData, ebrc_status: v})}>
+              <Select value={ebrcFormData.ebrc_status} onValueChange={(v) => setEbrcFormData({...ebrcFormData, ebrc_status: v, rejection_reason: ''})}>
                 <SelectTrigger className="bg-background" data-testid="ebrc-status-select">
                   <SelectValue />
                 </SelectTrigger>
@@ -686,6 +686,21 @@ export default function ShipmentsPage() {
                   <Input value={ebrcFormData.ebrc_number} onChange={(e) => setEbrcFormData({...ebrcFormData, ebrc_number: e.target.value})} placeholder="eBRC-2024-XXXXX" className="bg-background" />
                 </div>
               </>
+            )}
+            {/* Rejection Reason - Required when status is 'rejected' */}
+            {ebrcFormData.ebrc_status === 'rejected' && (
+              <div className="space-y-2">
+                <Label>Reason for Rejection *</Label>
+                <Input 
+                  value={ebrcFormData.rejection_reason || ''} 
+                  onChange={(e) => setEbrcFormData({...ebrcFormData, rejection_reason: e.target.value})} 
+                  placeholder="Enter rejection reason" 
+                  required
+                  className="bg-background"
+                  data-testid="ebrc-rejection-reason-input"
+                />
+                <p className="text-xs text-muted-foreground">Required for compliance audit trail</p>
+              </div>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEbrcDialogOpen(false)}>Cancel</Button>

@@ -80,6 +80,8 @@ function AppRoutes() {
       <Route path="/connectors" element={<ProtectedRoute><ConnectorsPage /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+      <Route path="/security" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
+      <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
       
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

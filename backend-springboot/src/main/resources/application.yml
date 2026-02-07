@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: export-flow-backend
+  data:
+    mongodb:
+      uri: ${MONGO_URL:mongodb://localhost:27017}
+      database: ${DB_NAME:test_database}
+
+app:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY:default-secret-key}
+    algorithm: HS256
+    expire-minutes: ${JWT_EXPIRE_MINUTES:1440}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:*}
+  ai:
+    emergent-llm-key: ${EMERGENT_LLM_KEY:}
+
+server:
+  servlet:
+    context-path: /api

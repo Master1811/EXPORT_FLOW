@@ -83,3 +83,4 @@ class EBRCUpdateRequest(BaseModel):
     ebrc_status: str
     ebrc_filed_date: Optional[str] = None
     ebrc_number: Optional[str] = None
+    rejection_reason: Optional[str] = None  # Required when status is 'rejected'

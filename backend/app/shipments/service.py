@@ -114,6 +114,13 @@ class ShipmentService:
     @staticmethod
     async def update_ebrc(shipment_id: str, data: EBRCUpdateRequest, user: dict) -> ShipmentResponse:
         """Update e-BRC status for a shipment"""
+        # P0 Fix: Enforce rejection_reason when status is 'rejected'
+        if data.ebrc_status == "rejected" and not data.rejection_reason:
+            raise HTTPException(
+                status_code=422, 
+                detail="rejection_reason is required when status is 'rejected'"
+            )
+        
         query = {"id": shipment_id, "company_id": user.get("company_id", user["id"])}
         
         update_data = {
@@ -124,6 +131,8 @@ class ShipmentService:
             update_data["ebrc_filed_date"] = data.ebrc_filed_date
         if data.ebrc_number:
             update_data["ebrc_number"] = data.ebrc_number
+        if data.rejection_reason:
+            update_data["ebrc_rejection_reason"] = data.rejection_reason
         
         result = await db.shipments.update_one(query, {"$set": update_data})
         if result.matched_count == 0:

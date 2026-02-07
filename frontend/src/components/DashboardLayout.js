@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { 
   Ship, LayoutDashboard, Package, FileText, CreditCard, 
   TrendingUp, Calculator, Brain, Users, Link2, Bell, 
-  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X
+  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X, Shield
 } from 'lucide-react';
 
 const navItems = [

@@ -78,6 +78,8 @@ class ShipmentUpdate(BaseModel):
     buyer_phone: Optional[str] = None
     buyer_pan: Optional[str] = None
     buyer_bank_account: Optional[str] = None
+    # Optimistic locking version
+    version: Optional[int] = None
 
 class EBRCUpdateRequest(BaseModel):
     ebrc_status: str

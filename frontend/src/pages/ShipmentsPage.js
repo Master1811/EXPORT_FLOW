@@ -187,7 +187,8 @@ export default function ShipmentsPage() {
     setEbrcFormData({
       ebrc_status: shipment.ebrc_status || 'pending',
       ebrc_filed_date: shipment.ebrc_filed_date || '',
-      ebrc_number: shipment.ebrc_number || ''
+      ebrc_number: shipment.ebrc_number || '',
+      rejection_reason: shipment.ebrc_rejection_reason || ''
     });
     setEbrcDialogOpen(true);
   };

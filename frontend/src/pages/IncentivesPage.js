@@ -747,6 +747,8 @@ export default function IncentivesPage() {
           </CardContent>
         </Card>
       )}
+        </>
+      )}
     </div>
   );
 }

@@ -420,6 +420,8 @@ export default function PaymentsPage() {
             </CardContent>
           </Card>
         </div>
+          )}
+        </>
       )}
 
       {/* Aging Dashboard Tab */}

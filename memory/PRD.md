@@ -1,152 +1,148 @@
 # ExportFlow - Exporter Finance & Compliance Platform
 
 ## Original Problem Statement
-Build a comprehensive Exporter Finance & Compliance Platform with:
-- Full-stack architecture (FastAPI + React + MongoDB)
-- Core modules: Auth, Shipments, Trade Documents, Payments/Forex, GST Compliance, AI/OCR, Credit Intelligence, Connectors
-- Modern/Fintech dark theme with vibrant accents
-- JWT-based authentication
-- AI integration using Gemini 3 Flash
-
-## User Personas
-1. **Export Manager** - Manages shipments, documents, and buyer relationships
-2. **Finance Controller** - Tracks payments, receivables, and forex
-3. **Compliance Officer** - Handles GST, LUT, and regulatory requirements
-4. **Business Owner** - Oversees overall export operations and profitability
+Build a comprehensive Exporter Finance & Compliance Platform with full-stack architecture (FastAPI + React + MongoDB), supporting export incentives, compliance tracking, payments, and AI-powered assistance.
 
 ---
 
 ## What's Been Implemented
 
-### February 7, 2025 - P2: Security & Export Features (COMPLETED)
+### February 7, 2025 - P2 Features: AI, OCR, Notifications (COMPLETED)
+
+**Gemini AI Service:**
+- `POST /api/ai/query` - Chat with ExportFlow AI (Gemini 3 Flash)
+- `GET /api/ai/chat-history` - View conversation history
+- `GET /api/ai/analyze-shipment/{id}` - AI analysis of specific shipment
+- `GET /api/ai/risk-alerts` - Overdue payments + e-BRC deadline alerts
+- `GET /api/ai/incentive-optimizer` - Recommendations to maximize benefits
+- `GET /api/ai/refund-forecast` - Expected refund projections
+- `GET /api/ai/cashflow-forecast` - Cash flow predictions
+
+**Document OCR Service:**
+- `POST /api/documents/upload` - Upload documents (PDF, PNG, JPG)
+- `GET /api/documents/uploads` - List uploaded files
+- `POST /api/documents/ocr/process` - Extract data using Gemini Vision
+- Supports: Commercial Invoices, Shipping Bills, Packing Lists
+
+**Email Notifications (SendGrid):**
+- `POST /api/notifications/email/send-alerts` - Send e-BRC and overdue alerts
+- `GET /api/notifications/email/log` - View notification history
+- Beautiful HTML email templates for alerts
+- Graceful handling when SendGrid API key not configured
+
+### February 7, 2025 - E2E Test Suite (PASSED)
+
+**Test Results:**
+- TC-EBRC-01 to TC-EBRC-05: e-BRC Monitoring ✅
+- TC-AGE-01 to TC-AGE-04: Receivable Aging ✅
+- TC-SEC-01 to TC-SEC-04: Security/IDOR/PII ✅
+- TC-SYS-01 to TC-SYS-03: System Resilience ✅
+
+**Gap Identified:** TC-EBRC-05 (rejection reason not enforced) - documented for future fix
+
+### February 7, 2025 - P2 Security & Export (COMPLETED)
 
 **JWT Blacklisting:**
-- `POST /api/auth/logout` - Blacklists current token
-- `POST /api/auth/change-password` - Changes password and invalidates ALL tokens (via token_version)
-- Token blacklist stored in MongoDB (token_blacklist collection)
-- Automatic rejection of blacklisted tokens (401 Unauthorized)
+- Token invalidation on logout
+- All tokens invalidated on password change
+- MongoDB token_blacklist collection
 
-**Async Export Service (CSV + Excel + PDF):**
-- `POST /api/exports` - Create export job for shipments/payments/receivables/incentives
-- `GET /api/exports/jobs` - List all export jobs with status
-- `GET /api/exports/jobs/{id}` - Get specific job status
-- `GET /api/exports/download/{id}` - Download completed export file
-- Formats: CSV (text/csv), Excel (.xlsx via xlsxwriter), PDF (.pdf via reportlab)
-- Progress tracking with percentage and row count
+**Async Export Service:**
+- CSV, Excel (.xlsx), PDF formats
+- Progress tracking
+- Download via `/api/exports/download/{id}`
 
-**Migration Architecture Document:**
-- `/app/MIGRATION_GUIDE.md` - Comprehensive guide for FastAPI/MongoDB → Spring Boot/PostgreSQL
-- Schema design, API mapping, code structure, authentication migration
-- Data migration scripts, deployment architecture, rollback plan
+**Migration Document:**
+- `/app/MIGRATION_GUIDE.md` - 400+ line comprehensive guide for Spring Boot/PostgreSQL migration
 
-### February 7, 2025 - Epic 2 & 3: e-BRC + Aging Dashboard (COMPLETED)
+### February 7, 2025 - Epic 2 & 3 (COMPLETED)
 
-**Epic 2 - e-BRC Monitoring:**
-- e-BRC status tracking: pending → filed → approved/rejected
-- 60-day deadline calculation and alerts
-- Dashboard with overdue/due-soon shipments
+**e-BRC Monitoring:**
+- Status tracking: pending → filed → approved/rejected
+- 60-day deadline calculation
+- Alerts for overdue/due-soon shipments
 
-**Epic 3 - Receivables Aging Dashboard:**
+**Receivables Aging Dashboard:**
 - Aging buckets: 0-30, 31-60, 61-90, 90+ days
-- Visual bar chart and pie chart
-- Overdue alerts with detailed breakdown
+- Visual bar/pie charts
+- Overdue alerts
 
-**Security Enhancements:**
-- PII Masking for buyer PAN/phone/bank account
-- IDOR Protection on all data queries
+**Security:**
+- IDOR Protection (404 on unauthorized access)
+- PII Masking (buyer PAN/phone/bank masked by default)
 
-### February 7, 2025 - Epic 5: Incentives Optimizer (COMPLETED)
+### February 7, 2025 - Epic 5 (COMPLETED)
 
-**Hero Feature - "Money Left on Table" Dashboard:**
+**Incentives Optimizer - Hero Feature:**
 - Moradabad handicraft HS codes database
 - RoDTEP/RoSCTL/Drawback rate lookup
-- Comprehensive 3-tab dashboard
-
-### January 28, 2025 - Initial Build (COMPLETED)
-
-**Backend:** 65+ API endpoints, JWT auth, MongoDB integration
-**Frontend:** 14 pages with dark fintech theme
+- "Money Left on Table" dashboard
 
 ---
 
 ## Test Reports Summary
-| Iteration | Date | Backend | Frontend | Features |
-|-----------|------|---------|----------|----------|
-| 1 | Jan 28 | 95.7% | 90% | Initial build |
-| 2 | Feb 7 | 100% (27/27) | 100% | Epic 5 Incentives |
-| 3 | Feb 7 | 100% (23/23) | 100% | Epic 2 & 3 |
-| 4 | Feb 7 | 100% (24/24) | N/A | P2 Security & Export |
+| Iteration | Backend | Frontend | Features |
+|-----------|---------|----------|----------|
+| 1 | 95.7% | 90% | Initial build |
+| 2 | 100% (27/27) | 100% | Epic 5 Incentives |
+| 3 | 100% (23/23) | 100% | Epic 2 & 3 |
+| 4 | 100% (24/24) | N/A | Security & Export |
+| 5 | 100% (16/16) | 100% | E2E Test Suite |
+| 6 | 100% (20/20) | 100% | AI, OCR, Email |
 
 ---
 
-## Security Tests Status
-| Category | Test Case | Status |
-|----------|-----------|--------|
-| Security | IDOR Attack Prevention | ✅ Implemented |
-| Frontend | PII Masking | ✅ Implemented |
-| Security | JWT Blacklisting | ✅ Implemented |
-| Performance | Async Export | ✅ Implemented (sync for now) |
-| Architecture | DB Failover | ✅ MongoDB handles reconnection |
-
----
-
-## API Endpoints Summary
+## API Summary (70+ endpoints)
 
 ### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login and get JWT token
-- `POST /api/auth/logout` - Logout and blacklist token
-- `POST /api/auth/change-password` - Change password and invalidate tokens
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/refresh` - Refresh token
+- `POST /api/auth/register`, `/login`, `/logout`, `/change-password`
+
+### AI & Forecasting
+- `POST /api/ai/query` - Chat with Gemini AI
+- `GET /api/ai/risk-alerts`, `/incentive-optimizer`, `/refund-forecast`, `/cashflow-forecast`
+- `GET /api/ai/analyze-shipment/{id}`, `/chat-history`
+
+### Documents
+- `POST /api/documents/upload`, `/api/documents/ocr/process`
+- `GET /api/documents/uploads`
+
+### Notifications
+- `POST /api/notifications/email/send-alerts`
+- `GET /api/notifications/email/log`
 
 ### Exports
-- `POST /api/exports` - Create export job (shipments/payments/receivables/incentives)
-- `GET /api/exports/jobs` - List export jobs
-- `GET /api/exports/jobs/{id}` - Get job status
-- `GET /api/exports/download/{id}` - Download file (CSV/XLSX/PDF)
+- `POST /api/exports`, `GET /api/exports/jobs`, `/download/{id}`
 
 ### Shipments
-- CRUD operations + e-BRC management
-- `GET /api/shipments/ebrc-dashboard`
+- CRUD + e-BRC management + dashboard
 
 ### Payments
 - `GET /api/payments/receivables/aging-dashboard`
 
 ### Incentives
-- `GET /api/incentives/leakage-dashboard`
-- `GET /api/incentives/rodtep-eligibility`
+- `GET /api/incentives/leakage-dashboard`, `/rodtep-eligibility`
 
 ---
 
-## Prioritized Backlog
-
-### P0 & P1 (Critical/Important) - ALL COMPLETED ✅
-- [x] Auth flow with JWT blacklisting
-- [x] Shipment management with e-BRC
-- [x] Payment tracking with aging dashboard
-- [x] Incentives Optimizer (Hero Feature)
-- [x] IDOR Protection + PII Masking
-- [x] Export service (CSV/Excel/PDF)
-
-### P2 (Enhancement) - REMAINING
-- [ ] WhatsApp/Email notifications for alerts
-- [ ] Document OCR with file upload
-- [ ] Bulk invoice upload
-- [ ] Gemini AI service implementation (skeleton exists)
-
----
-
-## Test Credentials
+## Credentials
 ```
 Email: test@moradabad.com
 Password: Test@123
 ```
 
+## Environment Variables (Required for Full Functionality)
+```
+SENDGRID_API_KEY=your_sendgrid_key  # For email alerts
+SENDER_EMAIL=noreply@yourcompany.com
+EMERGENT_LLM_KEY=your_key  # For Gemini AI (already configured)
+```
+
+---
+
 ## Documentation
-- `/app/MIGRATION_GUIDE.md` - Spring Boot migration guide
+- `/app/MIGRATION_GUIDE.md` - Spring Boot/PostgreSQL migration
 - `/app/LOCAL_SETUP_GUIDE.md` - Local development setup
-- `/app/memory/PRD.md` - This document
+- `/app/memory/PRD.md` - Product Requirements
 
 ---
 

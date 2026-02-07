@@ -67,8 +67,8 @@ export default function AuditLogsPage() {
   const [activeTab, setActiveTab] = useState('all');
   
   // Filters
-  const [actionFilter, setActionFilter] = useState('');
-  const [resourceFilter, setResourceFilter] = useState('');
+  const [actionFilter, setActionFilter] = useState('all');
+  const [resourceFilter, setResourceFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {

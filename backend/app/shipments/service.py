@@ -53,7 +53,8 @@ class ShipmentService:
             "company_id": user.get("company_id", user["id"]),
             "created_by": user["id"],
             "created_at": now_iso(),
-            "updated_at": now_iso()
+            "updated_at": now_iso(),
+            "version": 1  # Initialize version for optimistic locking
         }
         await db.shipments.insert_one(shipment_doc)
         return ShipmentService._to_response(shipment_doc)

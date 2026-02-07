@@ -62,17 +62,22 @@ class TestJWTBlacklisting:
     
     def test_logout_returns_proper_response(self):
         """Test logout endpoint returns proper response structure"""
-        # Login
+        # Use a fresh login to get an un-blacklisted token
         login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": TEST_EMAIL,
             "password": TEST_PASSWORD
         })
+        assert login_response.status_code == 200, f"Login failed: {login_response.text}"
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         
-        # Logout
+        # Verify token is valid first
+        me_response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
+        assert me_response.status_code == 200, "Fresh token should be valid"
+        
+        # Logout with fresh token
         logout_response = requests.post(f"{BASE_URL}/api/auth/logout", headers=headers)
-        assert logout_response.status_code == 200
+        assert logout_response.status_code == 200, f"Logout failed: {logout_response.text}"
         data = logout_response.json()
         assert "message" in data
         assert "status" in data

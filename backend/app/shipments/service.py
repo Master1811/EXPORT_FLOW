@@ -1,23 +1,62 @@
 from typing import List, Optional
+from datetime import datetime, timezone, timedelta
 from ..core.database import db
 from ..common.utils import generate_id, now_iso
-from .models import ShipmentCreate, ShipmentResponse, ShipmentUpdate
+from .models import ShipmentCreate, ShipmentResponse, ShipmentUpdate, EBRCUpdateRequest
 from fastapi import HTTPException
+
+# e-BRC deadline is 60 days from shipment date
+EBRC_DEADLINE_DAYS = 60
+
+def mask_pii(value: str, visible_chars: int = 4) -> str:
+    """Mask sensitive data showing only last few characters"""
+    if not value or len(value) <= visible_chars:
+        return value
+    return '*' * (len(value) - visible_chars) + value[-visible_chars:]
+
+def calculate_ebrc_due_date(ship_date: str) -> str:
+    """Calculate e-BRC due date (60 days from shipment)"""
+    try:
+        if ship_date:
+            ship_dt = datetime.fromisoformat(ship_date.replace("Z", "+00:00"))
+            due_date = ship_dt + timedelta(days=EBRC_DEADLINE_DAYS)
+            return due_date.isoformat()
+    except:
+        pass
+    return None
+
+def calculate_ebrc_days_remaining(due_date: str) -> int:
+    """Calculate days remaining until e-BRC deadline"""
+    if not due_date:
+        return None
+    try:
+        due_dt = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        return (due_dt - now).days
+    except:
+        return None
 
 class ShipmentService:
     @staticmethod
     async def create(data: ShipmentCreate, user: dict) -> ShipmentResponse:
         shipment_id = generate_id()
+        shipment_dict = data.model_dump()
+        
+        # Calculate e-BRC due date if actual_ship_date provided
+        ship_date = shipment_dict.get("actual_ship_date") or shipment_dict.get("expected_ship_date")
+        if ship_date:
+            shipment_dict["ebrc_due_date"] = calculate_ebrc_due_date(ship_date)
+        
         shipment_doc = {
             "id": shipment_id,
-            **data.model_dump(),
+            **shipment_dict,
             "company_id": user.get("company_id", user["id"]),
             "created_by": user["id"],
             "created_at": now_iso(),
             "updated_at": now_iso()
         }
         await db.shipments.insert_one(shipment_doc)
-        return ShipmentResponse(**{k: v for k, v in shipment_doc.items() if k in ShipmentResponse.model_fields})
+        return ShipmentService._to_response(shipment_doc)
 
     @staticmethod
     async def get_all(user: dict, status: Optional[str] = None, skip: int = 0, limit: int = 50) -> List[ShipmentResponse]:
@@ -26,26 +65,171 @@ class ShipmentService:
             query["status"] = status
         
         shipments = await db.shipments.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-        return [ShipmentResponse(**{k: v for k, v in s.items() if k in ShipmentResponse.model_fields}) for s in shipments]
+        return [ShipmentService._to_response(s) for s in shipments]
 
     @staticmethod
-    async def get(shipment_id: str) -> ShipmentResponse:
-        shipment = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
+    async def get(shipment_id: str, user: dict = None, mask_sensitive: bool = True) -> ShipmentResponse:
+        query = {"id": shipment_id}
+        # IDOR protection: ensure user can only access their company's data
+        if user:
+            query["company_id"] = user.get("company_id", user["id"])
+        
+        shipment = await db.shipments.find_one(query, {"_id": 0})
         if not shipment:
             raise HTTPException(status_code=404, detail="Shipment not found")
-        return ShipmentResponse(**{k: v for k, v in shipment.items() if k in ShipmentResponse.model_fields})
+        return ShipmentService._to_response(shipment, mask_sensitive)
 
     @staticmethod
-    async def update(shipment_id: str, data: ShipmentUpdate) -> ShipmentResponse:
+    async def update(shipment_id: str, data: ShipmentUpdate, user: dict = None) -> ShipmentResponse:
+        # IDOR protection
+        query = {"id": shipment_id}
+        if user:
+            query["company_id"] = user.get("company_id", user["id"])
+        
         update_data = data.model_dump(exclude_unset=True, exclude_none=True)
         update_data["updated_at"] = now_iso()
-        await db.shipments.update_one({"id": shipment_id}, {"$set": update_data})
+        
+        # Recalculate e-BRC due date if ship date changed
+        if "actual_ship_date" in update_data:
+            update_data["ebrc_due_date"] = calculate_ebrc_due_date(update_data["actual_ship_date"])
+        
+        result = await db.shipments.update_one(query, {"$set": update_data})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Shipment not found")
+        
         shipment = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
-        return ShipmentResponse(**{k: v for k, v in shipment.items() if k in ShipmentResponse.model_fields})
+        return ShipmentService._to_response(shipment)
 
     @staticmethod
-    async def delete(shipment_id: str) -> dict:
-        result = await db.shipments.delete_one({"id": shipment_id})
+    async def delete(shipment_id: str, user: dict = None) -> dict:
+        query = {"id": shipment_id}
+        if user:
+            query["company_id"] = user.get("company_id", user["id"])
+        
+        result = await db.shipments.delete_one(query)
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Shipment not found")
         return {"message": "Shipment deleted"}
+
+    @staticmethod
+    async def update_ebrc(shipment_id: str, data: EBRCUpdateRequest, user: dict) -> ShipmentResponse:
+        """Update e-BRC status for a shipment"""
+        query = {"id": shipment_id, "company_id": user.get("company_id", user["id"])}
+        
+        update_data = {
+            "ebrc_status": data.ebrc_status,
+            "updated_at": now_iso()
+        }
+        if data.ebrc_filed_date:
+            update_data["ebrc_filed_date"] = data.ebrc_filed_date
+        if data.ebrc_number:
+            update_data["ebrc_number"] = data.ebrc_number
+        
+        result = await db.shipments.update_one(query, {"$set": update_data})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Shipment not found")
+        
+        shipment = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
+        return ShipmentService._to_response(shipment)
+
+    @staticmethod
+    async def get_ebrc_dashboard(user: dict) -> dict:
+        """Get e-BRC monitoring dashboard data"""
+        company_id = user.get("company_id", user["id"])
+        shipments = await db.shipments.find(
+            {"company_id": company_id, "status": {"$in": ["shipped", "delivered", "completed"]}},
+            {"_id": 0}
+        ).to_list(500)
+        
+        now = datetime.now(timezone.utc)
+        
+        # Categorize by e-BRC status
+        pending = []
+        filed = []
+        approved = []
+        rejected = []
+        overdue = []
+        due_soon = []  # Due within 15 days
+        
+        for s in shipments:
+            ebrc_status = s.get("ebrc_status", "pending")
+            due_date_str = s.get("ebrc_due_date")
+            days_remaining = calculate_ebrc_days_remaining(due_date_str) if due_date_str else None
+            
+            shipment_summary = {
+                "id": s["id"],
+                "shipment_number": s["shipment_number"],
+                "buyer_name": s["buyer_name"],
+                "total_value": s["total_value"],
+                "currency": s["currency"],
+                "ebrc_status": ebrc_status,
+                "ebrc_due_date": due_date_str,
+                "days_remaining": days_remaining,
+                "ebrc_number": s.get("ebrc_number")
+            }
+            
+            if ebrc_status == "pending":
+                pending.append(shipment_summary)
+                if days_remaining is not None:
+                    if days_remaining < 0:
+                        overdue.append(shipment_summary)
+                    elif days_remaining <= 15:
+                        due_soon.append(shipment_summary)
+            elif ebrc_status == "filed":
+                filed.append(shipment_summary)
+            elif ebrc_status == "approved":
+                approved.append(shipment_summary)
+            elif ebrc_status == "rejected":
+                rejected.append(shipment_summary)
+        
+        # Calculate totals
+        total_pending_value = sum(s["total_value"] for s in pending)
+        total_overdue_value = sum(s["total_value"] for s in overdue)
+        total_approved_value = sum(s["total_value"] for s in approved)
+        
+        return {
+            "summary": {
+                "total_shipments": len(shipments),
+                "pending_count": len(pending),
+                "filed_count": len(filed),
+                "approved_count": len(approved),
+                "rejected_count": len(rejected),
+                "overdue_count": len(overdue),
+                "due_soon_count": len(due_soon)
+            },
+            "values": {
+                "total_pending": total_pending_value,
+                "total_overdue": total_overdue_value,
+                "total_approved": total_approved_value
+            },
+            "alerts": {
+                "overdue": overdue,
+                "due_soon": due_soon
+            },
+            "by_status": {
+                "pending": pending,
+                "filed": filed,
+                "approved": approved,
+                "rejected": rejected
+            }
+        }
+
+    @staticmethod
+    def _to_response(shipment: dict, mask_sensitive: bool = True) -> ShipmentResponse:
+        """Convert shipment dict to response model with PII masking"""
+        response_data = {}
+        for key in ShipmentResponse.model_fields:
+            if key in shipment:
+                value = shipment[key]
+                # Apply PII masking
+                if mask_sensitive and key in ["buyer_pan", "buyer_bank_account", "buyer_phone"]:
+                    value = mask_pii(value) if value else None
+                response_data[key] = value
+            else:
+                response_data[key] = None
+        
+        # Calculate e-BRC days remaining
+        if shipment.get("ebrc_due_date"):
+            response_data["ebrc_days_remaining"] = calculate_ebrc_days_remaining(shipment["ebrc_due_date"])
+        
+        return ShipmentResponse(**response_data)

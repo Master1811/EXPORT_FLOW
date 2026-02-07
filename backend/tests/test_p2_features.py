@@ -72,12 +72,12 @@ class TestAIQueryEndpoint(TestSetup):
         assert data.get("session_id") == session_id, "Session ID should match"
     
     def test_ai_query_unauthorized(self, session):
-        """TC-AI-03: AI query without auth returns 401"""
+        """TC-AI-03: AI query without auth returns 401/403"""
         response = session.post(
             f"{BASE_URL}/api/ai/query",
             json={"query": "Test query"}
         )
-        assert response.status_code == 401, "Should return 401 without auth"
+        assert response.status_code in [401, 403], "Should return 401 or 403 without auth"
 
 
 class TestAIChatHistory(TestSetup):

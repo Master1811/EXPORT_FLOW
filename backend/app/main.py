@@ -56,6 +56,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix="/api")
     app.include_router(exports_router, prefix="/api")
     app.include_router(audit_router, prefix="/api")
+    app.include_router(security_router, prefix="/api")
 
     # Add CORS middleware
     app.add_middleware(

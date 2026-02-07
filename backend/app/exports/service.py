@@ -151,16 +151,34 @@ class ExportService:
             data = await db.payments.find(query, {"_id": 0}).to_list(10000)
             
         elif export_type == "receivables":
-            from ..payments.service import PaymentService
-            # Mock user for service call
-            user = {"company_id": company_id, "id": company_id}
-            data = await PaymentService.get_receivables(user)
+            # Direct query instead of service call
+            shipments = await db.shipments.find({"company_id": company_id, "status": {"$ne": "paid"}}, {"_id": 0}).to_list(500)
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            data = []
+            for s in shipments:
+                payments = await db.payments.find({"shipment_id": s["id"], "company_id": company_id}, {"_id": 0}).to_list(100)
+                total_paid = sum(p.get("amount", 0) for p in payments)
+                outstanding = s["total_value"] - total_paid
+                if outstanding > 0:
+                    created = datetime.fromisoformat(s["created_at"].replace("Z", "+00:00"))
+                    days_outstanding = (now - created).days
+                    data.append({
+                        "shipment_number": s.get("shipment_number"),
+                        "buyer_name": s.get("buyer_name"),
+                        "buyer_country": s.get("buyer_country", ""),
+                        "total_value": s["total_value"],
+                        "currency": s.get("currency", "INR"),
+                        "paid": total_paid,
+                        "outstanding": outstanding,
+                        "status": s.get("status"),
+                        "days_outstanding": days_outstanding
+                    })
             
         elif export_type == "incentives":
             query = {"company_id": company_id}
             shipments = await db.shipments.find(query, {"_id": 0}).to_list(10000)
-            # Calculate incentives for each
-            from ..incentives.service import IncentiveService
+            from ..incentives.hs_database import get_hs_code_info
             data = []
             for s in shipments:
                 incentive_data = {
@@ -174,7 +192,6 @@ class ExportService:
                 # Add potential incentive calculation
                 hs_codes = s.get("hs_codes", [])
                 if hs_codes:
-                    from ..incentives.hs_database import get_hs_code_info
                     total_rate = 0
                     for code in hs_codes:
                         info = get_hs_code_info(code)

@@ -261,7 +261,7 @@ export default function DashboardPage() {
               icon={Calculator}
               color="violet"
               subtext="Expected in 45 days"
-              onClick={() => navigate('/gst')}
+              onClick={() => navigate('/compliance')}
             />
           </div>
 

@@ -25,6 +25,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
+import EmptyState from '../components/EmptyState';
 
 const BUCKET_COLORS = {
   '0_30': '#10B981',

@@ -30,7 +30,8 @@ class AuthService:
             "full_name": data.full_name,
             "company_id": company_id,
             "role": "admin" if company_id else "user",
-            "created_at": now_iso()
+            "created_at": now_iso(),
+            "token_version": None  # For JWT invalidation
         }
         await db.users.insert_one(user_doc)
         
@@ -61,6 +62,30 @@ class AuthService:
             created_at=user["created_at"]
         )
         return TokenResponse(access_token=token, user=user_response)
+
+    @staticmethod
+    async def change_password(user_id: str, current_password: str, new_password: str) -> dict:
+        """Change user password and invalidate existing tokens"""
+        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not verify_password(current_password, user["password"]):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Update password and token version
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "password": hash_password(new_password),
+                "token_version": now_iso()
+            }}
+        )
+        
+        return {
+            "message": "Password changed successfully. All sessions have been invalidated.",
+            "status": "success"
+        }
 
     @staticmethod
     def get_user_response(user: dict) -> UserResponse:

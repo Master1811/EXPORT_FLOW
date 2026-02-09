@@ -7,76 +7,77 @@ Build a comprehensive Exporter Finance & Compliance Platform with full-stack arc
 
 ## What's Been Implemented
 
-### February 7, 2025 - New Features & P2 Tasks (COMPLETED)
+### February 7, 2025 - Security & Trust Framework (COMPLETED)
 
-**Quick Start Tutorial:**
-- Step-by-step modal wizard for new user onboarding
-- Flow: Welcome → Create Shipment → Record Payment → Check Incentives → Complete
-- Auto-shows for users with 0 shipments
-- "Quick Start" button in dashboard header for manual trigger
+**A. Field-Level Encryption (Vault Strategy):**
+- AES-256-GCM encryption for sensitive data
+- Encrypted fields: Buyer Name, Invoice Values, Bank Details, PAN, Phone, Email
+- Field-specific key derivation for added security
+- Database administrators cannot read plain-text financials
+- Located: `/app/backend/app/common/encryption_service.py`
 
-**Enhanced Dashboard UI/UX:**
-- **Quick Actions Bar** with 8 shortcuts: New Shipment, Record Payment, Upload Doc, GST Calculator, Incentives, Reports, AI Insights, e-BRC Track
-- **Clickable Stat Cards** that navigate to relevant pages
-- **Gradient backgrounds** and glow effects on cards
-- **Enhanced charts** with better tooltips and styling
-- **Performance Overview** section with progress bars
+**B. Zero-Knowledge Proof (Transparency):**
+- **Audit Logs Dashboard** at `/security` or `/audit-logs`
+  - All Activity tab: Every view, edit, export action
+  - PII Access tab: All unmask/decrypt events
+  - Security Events tab: Logins, logouts, password changes
+- **Tamper-Proof Logs**: Hash chain ensures logs cannot be modified/deleted
+  - Each log contains: hash + previous_hash (SHA-256)
+  - Chain verification endpoint: `/api/security/verify-integrity`
+- **PII Masking by default**: Sensitive data masked (e.g., PAN: ******1234)
+- **On-Demand Decryption**: Data only unmasked on explicit "View" click
 
-**Enhanced Connectors Page:**
-- **Bank Account (AA)** connector with Account Aggregator flow
-  - Multi-step linking: Select Bank → Enter Account → Consent → Complete
-  - Shows linked accounts with balances (HDFC, ICICI, etc.)
-- **GST Portal** connector with GSTIN linking
-  - Shows GSTR-1/3B filing status and ITC balance
-- **ICEGATE (Customs)** connector with IEC code verification
-  - Shows shipping bills count and duty drawback pending
-- **Security Badge** explaining secure connections
-- **How Connectors Work** information section
+**C. Access Logging:**
+- Every action logged with:
+  - Timestamp
+  - User ID
+  - IP Address
+  - User Agent
+  - Session ID
+- Action types: view, edit, create, delete, export, login, logout, pii_unmask, decrypt
+- Located: `/app/backend/app/common/tamper_proof_audit.py`
 
-**P2: Optimistic Locking (Concurrency Control):**
-- Added `version` field to Shipment model (initialized to 1)
-- Update with correct version → succeeds, version increments
-- Update with stale version → returns 409 Conflict
-- Helpful error message: "The shipment has been modified by another user. Please refresh and try again."
+**D. Secure API Gateway:**
+- **JWT Short TTL**: Access tokens expire in 15 minutes (was 24 hours)
+- **Refresh Tokens**: 7-day validity for seamless UX
+- **Token Rotation**: New refresh token on each refresh
+- **JTI Tracking**: Each token has unique ID for revocation
+- Auto-refresh: Frontend refreshes token 1 minute before expiry
+- Located: `/app/backend/app/core/security.py`
 
-### Previous Session Updates
-- P0 Fix: e-BRC rejection reason enforcement
-- P1 Fix: Audit logging for PII unmasking
-- P1: Empty State UI for new users
-- Logout → Navigate to landing page
-- Landing page pricing section with 3 tiers
-- Landing page dashboard preview section
+**E. On-Demand Decryption:**
+- Data masked by default in all GET endpoints
+- `/api/shipments/{id}/unmasked` - Explicit unmask endpoint
+- Creates PII access audit log on every unmask request
+
+---
+
+## Security API Endpoints
+
+### Authentication (with Short TTL)
+- `POST /api/auth/login` - Returns access_token (15 min) + refresh_token (7 days)
+- `POST /api/auth/refresh` - Use refresh token to get new tokens
+- `POST /api/auth/logout` - Blacklist current token
+- `POST /api/auth/change-password` - Invalidates all tokens
+
+### Security & Audit
+- `GET /api/security/audit-logs` - All audit logs with filters
+- `GET /api/security/my-activity` - Current user's activity
+- `GET /api/security/pii-access-logs` - PII unmask events
+- `GET /api/security/security-events` - Login/logout events
+- `GET /api/security/resource-history/{type}/{id}` - Resource audit trail
+- `GET /api/security/verify-integrity` - Verify hash chain (admin)
+- `GET /api/security/stats` - Audit statistics
+- `GET /api/security/action-types` - Filter options
 
 ---
 
 ## Test Reports Summary
 | Iteration | Backend | Frontend | Features |
 |-----------|---------|----------|----------|
-| 7 | 100% (11/11) | 100% | P0/P1 Fixes, Landing Page |
-| 8 | 100% (12/12) | 95% | Quick Start, Connectors, Dashboard UI, Optimistic Locking |
-
----
-
-## API Summary (80+ endpoints)
-
-### New/Updated Endpoints
-- `PUT /api/shipments/{id}` - Now supports `version` field for optimistic locking
-- `GET /api/sync/bank` - Bank account sync status with account details
-- `GET /api/sync/gst` - GST portal sync with filing status
-- `GET /api/sync/customs` - ICEGATE sync with shipping bill count
-- `POST /api/connect/bank/initiate` - Initiate bank connection via AA
-- `POST /api/connect/gst/link` - Link GSTIN
-- `POST /api/connect/customs/link` - Link IEC code
-
-### Core Endpoints
-- Authentication: `/api/auth/*`
-- Shipments: `/api/shipments/*` (with version field for concurrency)
-- Payments: `/api/payments/*`
-- Incentives: `/api/incentives/*`
-- AI: `/api/ai/*`
-- Audit: `/api/audit/*`
-- Documents: `/api/documents/*`
-- Exports: `/api/exports/*`
+| 7 | 100% (11/11) | 100% | P0/P1 Fixes |
+| 8 | 100% (12/12) | 95% | Quick Start, Dashboard UI |
+| 9 | 100% (16/16) | 100% | **Security Framework** |
 
 ---
 
@@ -88,68 +89,35 @@ Password: Test@123
 
 ---
 
+## Security Compliance Checklist
+
+### ✅ Implemented
+- [x] Field-Level Encryption (AES-256-GCM)
+- [x] Tamper-Proof Audit Logs (Hash Chain)
+- [x] PII Masking by Default
+- [x] On-Demand Decryption with Audit
+- [x] Access Logging (Timestamp, User ID, IP)
+- [x] JWT Short TTL (15 min)
+- [x] Refresh Token Rotation
+- [x] Audit Logs Dashboard UI
+- [x] Security Events Monitoring
+
+### ⏳ Not Implemented (Skipped per user request)
+- [ ] Real-time Security Alerts (SMS/WhatsApp)
+- [ ] New Device Login Notifications
+
+---
+
 ## Prioritized Backlog
 
-### Completed ✅
-- [x] P0: e-BRC rejection reason enforcement
-- [x] P1: Audit logging for PII unmasking
-- [x] P1: Empty State UI
-- [x] P2: Optimistic Locking (Concurrency Control)
-- [x] Quick Start Tutorial
-- [x] Enhanced Dashboard UI/UX
-- [x] Connectors page with Bank/ICEGATE linking
-
-### Remaining P2 Tasks
+### P2 Remaining
 - [ ] TC-SEC-04: Verify no PII in frontend state logs
-- [ ] TC-SYS-03: Performance testing (Aging Dashboard <300ms with 100+ shipments)
+- [ ] TC-SYS-03: Performance testing (Aging Dashboard <300ms)
 
 ### Future/Backlog
-- [ ] WhatsApp notifications (requires Twilio credentials)
-- [ ] Migration Architecture to Next.js + Spring Boot (guide created)
-- [ ] Feature roadmap to 2030
-- [ ] DDoS protection & infrastructure resilience
-
----
-
-## Key Technical Features
-
-### Optimistic Locking Pattern
-```javascript
-// Frontend: Include version in update request
-const updateShipment = async (id, data, version) => {
-  const response = await api.put(`/shipments/${id}`, { ...data, version });
-  // New version returned in response
-  return response.data; // { ...shipment, version: newVersion }
-};
-
-// Handle conflict
-try {
-  await updateShipment(id, data, currentVersion);
-} catch (error) {
-  if (error.response?.status === 409) {
-    // Refresh data and show conflict message
-    toast.error('Data was modified. Please refresh.');
-  }
-}
-```
-
-### Quick Start Tutorial
-- Located at `/app/frontend/src/components/QuickStartTutorial.js`
-- 5 steps: Welcome, Shipment, Payment, Incentives, Complete
-- Skippable with localStorage flag
-- Auto-triggers for new users
-
-### Connectors Integration
-- Bank: Uses RBI Account Aggregator framework (simulated)
-- GST: GSTIN-based linking with public data fetch
-- ICEGATE: IEC code verification with DGFT
-
----
-
-## Documentation
-- `/app/MIGRATION_GUIDE.md` - Next.js + Spring Boot migration (comprehensive)
-- `/app/LOCAL_SETUP_GUIDE.md` - Local development setup
-- `/app/memory/PRD.md` - Product Requirements
+- [ ] WhatsApp notifications (requires Twilio)
+- [ ] SMS alerts for new device logins
+- [ ] Migration to Next.js + Spring Boot
 
 ---
 

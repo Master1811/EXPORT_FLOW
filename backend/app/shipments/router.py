@@ -4,8 +4,16 @@ from ..core.dependencies import get_current_user
 from .models import ShipmentCreate, ShipmentResponse, ShipmentUpdate, EBRCUpdateRequest
 from .service import ShipmentService
 from ..common.audit_service import audit_service
+from ..common.tamper_proof_audit import audit_service as tamper_audit, TamperProofAuditService
 
 router = APIRouter(prefix="/shipments", tags=["Shipments"])
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP from request."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else None
 
 @router.post("", response_model=ShipmentResponse)
 async def create_shipment(data: ShipmentCreate, user: dict = Depends(get_current_user)):
@@ -36,12 +44,41 @@ async def get_shipment_unmasked(
     request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Get shipment with unmasked PII (explicit request) - Logged for audit trail"""
+    """
+    Get shipment with unmasked/decrypted PII.
+    
+    ON-DEMAND DECRYPTION: Data is only unmasked when explicitly requested.
+    This action is LOGGED to tamper-proof audit trail.
+    
+    Logged details:
+    - User ID
+    - Timestamp  
+    - IP Address
+    - Accessed fields
+    """
     # Get the shipment with unmasked PII
     shipment = await ShipmentService.get(shipment_id, user, mask_sensitive=False)
     
-    # Log the PII access to audit trail (TC-SEC-03)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_client_ip(request)
+    user_agent = request.headers.get("User-Agent")
+    
+    # Log to tamper-proof audit trail
+    await tamper_audit.log(
+        user_id=user["id"],
+        action=TamperProofAuditService.ACTION_PII_UNMASK,
+        resource_type=TamperProofAuditService.RESOURCE_SHIPMENT,
+        resource_id=shipment_id,
+        details={
+            "shipment_number": shipment.shipment_number,
+            "buyer_name": shipment.buyer_name,
+            "accessed_fields": ["buyer_phone", "buyer_pan", "buyer_bank_account", "buyer_email", "total_value"],
+            "action_description": "User explicitly requested unmasked PII data"
+        },
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    
+    # Also log to legacy audit service
     await audit_service.log_event(
         user_id=user["id"],
         action="pii_unmask",

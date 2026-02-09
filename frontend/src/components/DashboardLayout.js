@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { 
   Ship, LayoutDashboard, Package, FileText, CreditCard, 
   TrendingUp, Calculator, Brain, Users, Link2, Bell, 
-  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X
+  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X, Shield
 } from 'lucide-react';
 
 const navItems = [
@@ -115,6 +115,14 @@ export const DashboardLayout = ({ children }) => {
 
         {/* Bottom Section */}
         <div className="border-t border-border p-3 space-y-1">
+          <Link
+            to="/security"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:bg-surface-highlight hover:text-foreground transition-colors"
+            data-testid="nav-security"
+          >
+            <Shield className="w-5 h-5" strokeWidth={1.5} />
+            {!collapsed && <span className="text-sm">Security & Audit</span>}
+          </Link>
           <Link
             to="/notifications"
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:bg-surface-highlight hover:text-foreground transition-colors"

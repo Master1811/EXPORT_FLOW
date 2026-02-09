@@ -102,7 +102,7 @@ export default function DashboardPage() {
   };
 
   // Enhanced Stat Card with gradient and animation
-  const StatCard = ({ title, value, change, icon: Icon, trend, color = 'violet', subtext, onClick }) => (
+  const StatCard = ({ title, value, change, icon: Icon, trend, color = 'violet', subtext, onClick, showTrend = true }) => (
     <GlowCard 
       glowColor={color}
       className="cursor-pointer group hover:scale-[1.02] transition-transform"
@@ -125,13 +125,13 @@ export default function DashboardPage() {
             <Icon className={`w-7 h-7 text-${color}-400`} strokeWidth={1.5} />
           </div>
         </div>
-        {change !== undefined && (
+        {change !== undefined && showTrend && (
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-800">
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${
               trend === 'up' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
             }`}>
               {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              <span className="text-xs font-medium">{Math.abs(change)}%</span>
+              <span className="text-xs font-medium">{Math.abs(change).toFixed(1)}%</span>
             </div>
             <span className="text-xs text-zinc-500">vs last month</span>
           </div>
@@ -231,8 +231,9 @@ export default function DashboardPage() {
             <StatCard
               title="Total Export Value"
               value={formatCurrency(stats?.total_export_value || 0)}
-              change={12}
-              trend="up"
+              change={stats?.export_value_trend?.change}
+              trend={stats?.export_value_trend?.trend}
+              showTrend={stats?.has_previous_month_data}
               icon={Ship}
               color="blue"
               onClick={() => navigate('/shipments')}
@@ -240,8 +241,9 @@ export default function DashboardPage() {
             <StatCard
               title="Outstanding Receivables"
               value={formatCurrency(stats?.total_receivables || 0)}
-              change={-5}
-              trend="down"
+              change={stats?.receivables_trend?.change}
+              trend={stats?.receivables_trend?.trend}
+              showTrend={stats?.has_previous_month_data}
               icon={CreditCard}
               color="amber"
               onClick={() => navigate('/payments')}
@@ -249,8 +251,9 @@ export default function DashboardPage() {
             <StatCard
               title="Incentives Earned"
               value={formatCurrency(stats?.total_incentives_earned || 0)}
-              change={18}
-              trend="up"
+              change={stats?.incentives_trend?.change}
+              trend={stats?.incentives_trend?.trend}
+              showTrend={stats?.has_previous_month_data}
               icon={Percent}
               color="emerald"
               onClick={() => navigate('/incentives')}
@@ -389,6 +392,7 @@ export default function DashboardPage() {
                           border: '1px solid #3F3F46',
                           borderRadius: '12px'
                         }}
+                        formatter={(value) => [formatCurrency(value), 'Amount']}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -397,11 +401,11 @@ export default function DashboardPage() {
                 <div className="flex flex-wrap justify-center gap-4 mt-4">
                   {paymentStatus.map((item, i) => {
                     const colors = ['#10B981', '#F59E0B', '#EF4444'];
-                    return (
+                      return (
                       <div key={item.name} className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[i] }} />
                         <span className="text-xs text-zinc-400">{item.name}</span>
-                        <span className="text-xs font-medium text-zinc-300">{item.value}</span>
+                        <span className="text-xs font-medium text-zinc-300">{formatCurrency(item.value || 0)}</span>
                       </div>
                     );
                   })}

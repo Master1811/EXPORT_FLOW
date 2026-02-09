@@ -1,7 +1,8 @@
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
 from starlette.middleware.cors import CORSMiddleware
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Tuple
 import logging
+from datetime import datetime, timedelta
 
 from .core.config import settings
 from .core.database import db, close_db
@@ -31,6 +32,71 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+def get_month_date_range(months_ago: int = 0) -> Tuple[str, str]:
+    """Get the first and last day of a month (ISO format).
+    
+    Args:
+        months_ago: 0 for current month, 1 for last month, etc.
+    
+    Returns:
+        Tuple of (start_date, end_date) in ISO format
+    """
+    today = datetime.utcnow()
+    # Calculate the date months_ago
+    month = today.month - months_ago
+    year = today.year
+    while month <= 0:
+        month += 12
+        year -= 1
+    
+    # First day of the month
+    start_date = datetime(year, month, 1)
+    # Last day of the month
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1) - timedelta(seconds=1)
+    else:
+        end_date = datetime(year, month + 1, 1) - timedelta(seconds=1)
+    
+    return start_date.isoformat() + "Z", end_date.isoformat() + "Z"
+
+def calculate_metric_change(current_value: float, previous_value: float) -> Optional[Dict[str, Any]]:
+    """Calculate percentage change between two values.
+    
+    Returns None if previous_value is 0 (no baseline for comparison).
+    Returns dict with 'change' percentage and 'trend' (up/down).
+    """
+    if previous_value == 0:
+        return None
+    
+    change = ((current_value - previous_value) / previous_value) * 100
+    return {
+        "change": abs(change),
+        "trend": "up" if change >= 0 else "down"
+    }
+
+async def get_stats_for_period(company_id: str, start_date: str, end_date: str) -> Dict[str, float]:
+    """Get aggregated statistics for a given date range."""
+    shipments = await db.shipments.find({
+        "company_id": company_id,
+        "created_at": {"$gte": start_date, "$lte": end_date}
+    }, {"_id": 0}).to_list(500)
+    
+    payments = await db.payments.find({
+        "company_id": company_id,
+        "created_at": {"$gte": start_date, "$lte": end_date}
+    }, {"_id": 0}).to_list(500)
+    
+    incentives = await db.incentives.find({
+        "company_id": company_id,
+        "created_at": {"$gte": start_date, "$lte": end_date}
+    }, {"_id": 0}).to_list(500)
+    
+    return {
+        "export_value": sum(s.get("total_value", 0) for s in shipments),
+        "payments": sum(p.get("amount", 0) for p in payments),
+        "incentives": sum(i.get("incentive_amount", 0) for i in incentives)
+    }
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -93,14 +159,30 @@ def create_app() -> FastAPI:
     async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         company_id = user.get("company_id", user["id"])
         
-        shipments = await db.shipments.find({"company_id": company_id}, {"_id": 0}).to_list(500)
-        payments = await db.payments.find({"company_id": company_id}, {"_id": 0}).to_list(500)
-        incentives = await db.incentives.find({"company_id": company_id}, {"_id": 0}).to_list(500)
+        # Get current month data
+        current_start, current_end = get_month_date_range(0)
+        current_stats = await get_stats_for_period(company_id, current_start, current_end)
         
-        total_export_value = sum(s.get("total_value", 0) for s in shipments)
-        total_payments = sum(p.get("amount", 0) for p in payments)
-        total_incentives = sum(i.get("incentive_amount", 0) for i in incentives)
-        active_shipments = len([s for s in shipments if s.get("status") not in ["completed", "cancelled"]])
+        # Get previous month data
+        previous_start, previous_end = get_month_date_range(1)
+        previous_stats = await get_stats_for_period(company_id, previous_start, previous_end)
+        
+        # Get all-time data for total stats
+        all_shipments = await db.shipments.find({"company_id": company_id}, {"_id": 0}).to_list(500)
+        all_payments = await db.payments.find({"company_id": company_id}, {"_id": 0}).to_list(500)
+        all_incentives = await db.incentives.find({"company_id": company_id}, {"_id": 0}).to_list(500)
+        
+        total_export_value = sum(s.get("total_value", 0) for s in all_shipments)
+        total_payments = sum(p.get("amount", 0) for p in all_payments)
+        total_incentives = sum(i.get("incentive_amount", 0) for i in all_incentives)
+        active_shipments = len([s for s in all_shipments if s.get("status") not in ["completed", "cancelled"]])
+        
+        # Calculate month-over-month changes
+        export_value_change = calculate_metric_change(current_stats["export_value"], previous_stats["export_value"])
+        receivables_current = current_stats["export_value"] - current_stats["payments"]
+        receivables_previous = previous_stats["export_value"] - previous_stats["payments"]
+        receivables_change = calculate_metric_change(receivables_current, receivables_previous)
+        incentives_change = calculate_metric_change(current_stats["incentives"], previous_stats["incentives"])
         
         return {
             "total_export_value": total_export_value,
@@ -108,23 +190,150 @@ def create_app() -> FastAPI:
             "total_payments_received": total_payments,
             "total_incentives_earned": total_incentives,
             "active_shipments": active_shipments,
-            "total_shipments": len(shipments),
+            "total_shipments": len(all_shipments),
             "pending_gst_refund": total_export_value * 0.18 * 0.4,
-            "compliance_score": 85
+            "compliance_score": 85,
+            # Month-over-month comparison data
+            "export_value_trend": export_value_change,
+            "receivables_trend": receivables_change,
+            "incentives_trend": incentives_change,
+            "has_previous_month_data": previous_stats["export_value"] > 0
         }
 
     @app.get("/api/dashboard/charts/export-trend")
-    async def get_export_trend():
+    async def get_export_trend(user: dict = Depends(get_current_user)):
+        company_id = user.get("company_id", user["id"])
+        
+        # Get shipments from last 6 months
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
+        shipments = await db.shipments.find({
+            "company_id": company_id,
+            "created_at": {"$gte": six_months_ago.isoformat() + "Z"}
+        }, {"_id": 0}).to_list(500)
+        
+        # Group by month
+        monthly_data = {}
+        for shipment in shipments:
+            created_at = shipment.get("created_at", "")
+            if created_at:
+                # Parse ISO format date
+                month_key = created_at[:7]  # YYYY-MM
+                if month_key not in monthly_data:
+                    monthly_data[month_key] = 0
+                monthly_data[month_key] += shipment.get("total_value", 0)
+        
+        # Generate last 6 months in order
+        labels = []
+        data = []
+        month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        
+        for i in range(5, -1, -1):  # Last 6 months in chronological order
+            month_date = datetime.utcnow() - timedelta(days=i*30)
+            month_key = month_date.strftime("%Y-%m")
+            month_label = month_names[month_date.month - 1]
+            labels.append(month_label)
+            data.append(monthly_data.get(month_key, 0))
+        
         return {
-            "labels": ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-            "data": [450000, 520000, 480000, 610000, 580000, 720000]
+            "labels": labels,
+            "data": data
         }
 
     @app.get("/api/dashboard/charts/payment-status")
-    async def get_payment_status_chart():
+    async def get_payment_status_chart(user: dict = Depends(get_current_user)):
+        company_id = user.get("company_id", user["id"])
+        # Per-shipment receivables approach:
+        # - For each shipment, compute unpaid = total_value - sum(payments for that shipment)
+        # - If unpaid == 0 -> shipment considered fully paid (paid portion counts toward Received)
+        # - If unpaid > 0 and shipment due_date (if available) is past -> unpaid counts as Overdue
+        # - Else unpaid counts as Pending
+        # Also include payments not linked to shipments: paid -> Received, unpaid/unapplied -> Pending/Overdue by due_date if present
+
+        shipments = await db.shipments.find({"company_id": company_id}, {"_id": 0}).to_list(2000)
+        payments = await db.payments.find({"company_id": company_id}, {"_id": 0}).to_list(4000)
+
+        # Build payments by shipment
+        payments_by_shipment = {}
+        unlinked_payments = []
+        for p in payments:
+            sid = p.get("shipment_id")
+            if sid:
+                payments_by_shipment.setdefault(sid, []).append(p)
+            else:
+                unlinked_payments.append(p)
+
+        received_amount = 0.0
+        pending_amount = 0.0
+        overdue_amount = 0.0
+        now = datetime.utcnow()
+        paid_statuses = {"paid", "received", "completed"}
+
+        # Process each shipment
+        for s in shipments:
+            sid = s.get("id") or s.get("shipment_number")
+            total = float(s.get("total_value", 0) or 0)
+            # Prefer payments' inr_amount if present
+            payment_list = payments_by_shipment.get(sid, [])
+            paid_sum = 0.0
+            for pp in payment_list:
+                paid_sum += float(pp.get("inr_amount") or pp.get("amount") or 0)
+
+            paid_applied = min(paid_sum, total)
+            unpaid = max(0.0, total - paid_sum)
+
+            received_amount += paid_applied
+
+            # Determine due date for shipment: try explicit `due_date`, then `ebrc_due_date`, then none
+            due_date_str = s.get("due_date") or s.get("ebrc_due_date") or s.get("expected_ship_date")
+            due_date = None
+            if due_date_str:
+                try:
+                    due_date = datetime.fromisoformat(due_date_str.replace("Z", "+00:00"))
+                except Exception:
+                    due_date = None
+
+            if unpaid > 0:
+                if due_date and due_date < now:
+                    overdue_amount += unpaid
+                else:
+                    pending_amount += unpaid
+
+        # Process unlinked payments
+        for p in unlinked_payments:
+            amt = float(p.get("inr_amount") or p.get("amount") or 0)
+            status = (p.get("status") or "").lower()
+            if status in paid_statuses:
+                received_amount += amt
+            elif status == "overdue":
+                overdue_amount += amt
+            else:
+                # try due_date on payment
+                due_date_str = p.get("due_date")
+                if due_date_str:
+                    try:
+                        d = datetime.fromisoformat(due_date_str.replace("Z", "+00:00"))
+                        if d < now:
+                            overdue_amount += amt
+                        else:
+                            pending_amount += amt
+                    except Exception:
+                        pending_amount += amt
+                else:
+                    pending_amount += amt
+
+        # If no data, return zeros
+        total_export = sum(float(s.get("total_value", 0) or 0) for s in shipments)
+        total_payments = sum(float(p.get("inr_amount") or p.get("amount") or 0) for p in payments)
+        if total_export == 0 and total_payments == 0:
+            return {"labels": ["Received", "Pending", "Overdue"], "data": [0, 0, 0]}
+
         return {
             "labels": ["Received", "Pending", "Overdue"],
-            "data": [65, 25, 10]
+            "data": [
+                round(received_amount, 2),
+                round(pending_amount, 2),
+                round(overdue_amount, 2)
+            ]
         }
 
     # File endpoints

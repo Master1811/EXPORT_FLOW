@@ -116,7 +116,7 @@ async def analyze_shipment(request: Request, response: Response, shipment_id: st
 
 @router.get("/refund-forecast")
 @limiter.limit("30/minute")
-async def get_refund_forecast(request: Request, user: dict = Depends(get_current_user)):
+async def get_refund_forecast(request: Request, response: Response, user: dict = Depends(get_current_user)):
     """
     Get expected refund forecast based on shipments.
     

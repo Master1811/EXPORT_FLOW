@@ -77,6 +77,68 @@ class ShipmentService:
         return [ShipmentService._to_response(s) for s in shipments]
 
     @staticmethod
+    async def get_paginated(
+        user: dict,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_at",
+        sort_order: str = "desc"
+    ) -> dict:
+        """
+        Get paginated shipments with server-side search and sorting.
+        Optimized for large datasets using indexed queries.
+        """
+        company_id = user.get("company_id", user["id"])
+        
+        # Build query with indexed fields
+        query = {"company_id": company_id}
+        
+        if status:
+            query["status"] = status
+        
+        # Server-side search on indexed fields
+        if search:
+            query["$or"] = [
+                {"shipment_number": {"$regex": search, "$options": "i"}},
+                {"buyer_name": {"$regex": search, "$options": "i"}},
+                {"buyer_country": {"$regex": search, "$options": "i"}},
+            ]
+        
+        # Calculate skip
+        skip = (page - 1) * page_size
+        
+        # Sort direction
+        sort_direction = -1 if sort_order == "desc" else 1
+        
+        # Execute queries in parallel for performance
+        import asyncio
+        
+        # Get total count and data in parallel
+        count_task = db.shipments.count_documents(query)
+        data_task = db.shipments.find(query, {"_id": 0}).sort(
+            sort_by, sort_direction
+        ).skip(skip).limit(page_size).to_list(page_size)
+        
+        total_count, shipments = await asyncio.gather(count_task, data_task)
+        
+        # Calculate pagination metadata
+        total_pages = (total_count + page_size - 1) // page_size
+        
+        return {
+            "data": [ShipmentService._to_response(s) for s in shipments],
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
+            }
+        }
+
+    @staticmethod
     async def get(shipment_id: str, user: dict = None, mask_sensitive: bool = True) -> ShipmentResponse:
         query = {"id": shipment_id}
         # IDOR protection: ensure user can only access their company's data

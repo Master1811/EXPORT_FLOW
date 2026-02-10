@@ -145,7 +145,7 @@ async def get_incentive_optimizer(request: Request, response: Response, user: di
 
 @router.get("/risk-alerts")
 @limiter.limit("30/minute")
-async def get_risk_alerts(request: Request, user: dict = Depends(get_current_user)):
+async def get_risk_alerts(request: Request, response: Response, user: dict = Depends(get_current_user)):
     """
     Get risk alerts (overdue payments, e-BRC deadlines, etc.)
     """

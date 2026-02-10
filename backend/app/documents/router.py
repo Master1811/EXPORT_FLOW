@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Query
+from fastapi import APIRouter, Depends, UploadFile, File, Query, Request
 from typing import Dict, Any, List
 from ..core.dependencies import get_current_user
+from ..core.rate_limiting import ocr_process_limit, limiter
 from .models import InvoiceCreate, DocumentResponse
 from .service import DocumentService
 from .ocr_service import OCRService
@@ -33,12 +34,14 @@ async def upload_document(
     return await OCRService.save_uploaded_file(content, file.filename, user)
 
 @router.post("/documents/ocr/process")
+@ocr_process_limit
 async def process_document_ocr(
+    request: Request,
     file_id: str = Query(...),
     document_type: str = Query(..., description="invoice, shipping_bill, or packing_list"),
     user: dict = Depends(get_current_user)
 ):
-    """Process uploaded document with OCR to extract data"""
+    """Process uploaded document with OCR to extract data. Rate limited: 20/hour per company."""
     return await OCRService.process_document(file_id, document_type, user)
 
 @router.get("/documents/ocr/jobs/{job_id}")
@@ -52,8 +55,9 @@ async def list_uploaded_files(limit: int = 20, user: dict = Depends(get_current_
     return await OCRService.list_uploaded_files(user, limit)
 
 @router.post("/documents/ocr/extract")
-async def extract_document_legacy(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Legacy OCR endpoint - upload and process in one step"""
+@ocr_process_limit
+async def extract_document_legacy(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Legacy OCR endpoint - upload and process in one step. Rate limited: 20/hour per company."""
     # Save file
     content = await file.read()
     file_info = await OCRService.save_uploaded_file(content, file.filename, user)
@@ -61,8 +65,9 @@ async def extract_document_legacy(file: UploadFile = File(...), user: dict = Dep
     return await OCRService.process_document(file_info["file_id"], "invoice", user)
 
 @router.post("/invoices/bulk-upload")
-async def bulk_upload_invoices(files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
-    """Bulk upload multiple invoices"""
+@limiter.limit("5/hour")
+async def bulk_upload_invoices(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
+    """Bulk upload multiple invoices. Rate limited: 5/hour per company."""
     results = []
     for file in files:
         content = await file.read()

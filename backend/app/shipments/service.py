@@ -5,7 +5,9 @@ from ..common.utils import generate_id, now_iso
 from ..common.encryption_service import encrypt_field, decrypt_field, mask_field, SENSITIVE_FIELDS
 from ..common.tamper_proof_audit import audit_service, TamperProofAuditService
 from .models import ShipmentCreate, ShipmentResponse, ShipmentUpdate, EBRCUpdateRequest
+from ..common.metrics import track_db_operation_sync
 from fastapi import HTTPException
+import time
 
 # e-BRC deadline is 60 days from shipment date
 EBRC_DEADLINE_DAYS = 60
@@ -64,7 +66,9 @@ class ShipmentService:
             "updated_at": now_iso(),
             "version": 1  # Initialize version for optimistic locking
         }
+        start = time.time()
         await db.shipments.insert_one(shipment_doc)
+        track_db_operation_sync("insert", "shipments", "success", time.time() - start)
         return ShipmentService._to_response(shipment_doc)
 
     @staticmethod
@@ -73,7 +77,9 @@ class ShipmentService:
         if status:
             query["status"] = status
         
+        start = time.time()
         shipments = await db.shipments.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+        track_db_operation_sync("find", "shipments", "success", time.time() - start)
         return [ShipmentService._to_response(s) for s in shipments]
 
     @staticmethod
@@ -145,7 +151,9 @@ class ShipmentService:
         if user:
             query["company_id"] = user.get("company_id", user["id"])
         
+        start = time.time()
         shipment = await db.shipments.find_one(query, {"_id": 0})
+        track_db_operation_sync("find", "shipments", "success" if shipment else "not_found", time.time() - start)
         if not shipment:
             raise HTTPException(status_code=404, detail="Shipment not found")
         return ShipmentService._to_response(shipment, mask_sensitive)
@@ -173,7 +181,9 @@ class ShipmentService:
             query["version"] = provided_version
             update_data["version"] = provided_version + 1
             
+            start = time.time()
             result = await db.shipments.update_one(query, {"$set": update_data})
+            track_db_operation_sync("update", "shipments", "success" if result.matched_count > 0 else "not_found", time.time() - start)
             if result.matched_count == 0:
                 # Check if shipment exists at all
                 exists = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})

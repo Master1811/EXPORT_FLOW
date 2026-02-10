@@ -1,8 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from typing import Dict, Any, Optional, Tuple
 import logging
+import time
 from datetime import datetime, timedelta
 
 from .core.config import settings
@@ -12,6 +16,7 @@ from .core.rate_limiting import setup_rate_limiting, limiter, dashboard_limit
 from .core.resilient_client import get_circuit_breaker_status
 from .core.structured_logging import configure_logging, logger as struct_logger
 from .common.utils import generate_id, now_iso
+from .common.metrics import track_request, update_uptime, update_business_metrics, companies_active, users_registered
 
 # Import routers
 from .auth.router import router as auth_router
@@ -110,6 +115,25 @@ def create_app() -> FastAPI:
         version="1.0.0"
     )
 
+    # Prometheus middleware for tracking requests
+    class PrometheusMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            start_time = time.time()
+            endpoint = request.url.path.replace("/api", "").split("?")[0] or "/"
+            method = request.method
+            
+            try:
+                response = await call_next(request)
+                duration = time.time() - start_time
+                track_request(method, endpoint, response.status_code, duration)
+                return response
+            except Exception as e:
+                duration = time.time() - start_time
+                track_request(method, endpoint, 500, duration, error_type=type(e).__name__)
+                raise
+
+    app.add_middleware(PrometheusMiddleware)
+
     # Include routers with /api prefix
     app.include_router(auth_router, prefix="/api")
     app.include_router(companies_router, prefix="/api")
@@ -185,6 +209,19 @@ def create_app() -> FastAPI:
     async def shutdown():
         await close_db()
 
+    # Startup event - initialize metrics with actual data
+    @app.on_event("startup")
+    async def startup():
+        try:
+            # Initialize user and company metrics with current database counts
+            total_users = await db.users.count_documents({})
+            total_companies = await db.companies.count_documents({})
+            users_registered.set(total_users)
+            companies_active.set(total_companies)
+            logger.info(f"Metrics initialized: {total_users} users, {total_companies} companies")
+        except Exception as e:
+            logger.error(f"Error initializing metrics: {e}")
+
     # Root endpoints
     @app.get("/api/")
     async def root():
@@ -192,6 +229,8 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     async def health_check():
+        update_uptime()
+        return {"status": "healthy", "timestamp": now_iso()}
         # Check database connectivity
         try:
             await db.command("ping")
@@ -208,6 +247,12 @@ def create_app() -> FastAPI:
                 "database": db_status
             }
         }
+
+    @app.get("/metrics", response_class=Response)
+    async def prometheus_metrics():
+        """Prometheus metrics endpoint (scrape target)"""
+        update_uptime()
+        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
     @app.get("/api/metrics")
     async def get_metrics():

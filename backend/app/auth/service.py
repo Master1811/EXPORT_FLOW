@@ -11,6 +11,7 @@ from ..core.security import hash_password, verify_password, create_token, create
 from ..common.utils import generate_id, now_iso
 from ..common.tamper_proof_audit import audit_service, TamperProofAuditService
 from .models import UserCreate, UserLogin, UserResponse, TokenResponse
+from ..common.metrics import companies_active, users_registered
 from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
 import secrets
@@ -305,6 +306,9 @@ class AuthService:
                 "created_at": now_iso()
             }
             await db.companies.insert_one(company_doc)
+            # Update active companies metric
+            total_companies = await db.companies.count_documents({})
+            companies_active.set(total_companies)
         
         user_doc = {
             "id": user_id,
@@ -318,6 +322,10 @@ class AuthService:
             "token_version": None
         }
         await db.users.insert_one(user_doc)
+        
+        # Update registered users metric
+        total_users = await db.users.count_documents({})
+        users_registered.set(total_users)
         
         # Generate email verification token
         verification_token = await AuthService.generate_verification_token(user_id, data.email)

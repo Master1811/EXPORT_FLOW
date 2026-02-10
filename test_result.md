@@ -369,15 +369,18 @@ frontend:
 
   - task: "Server-Side Pagination"
     implemented: true
-    working: "NA"
+    working: false
     file: "backend/app/shipments/router.py, service.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added /shipments/paginated endpoint with search, sort, and pagination metadata"
+      - working: false
+        agent: "testing"
+        comment: "Backend pagination endpoint test failed with 403 Forbidden status code. The endpoint exists but returns an authorization error when accessed. This needs to be fixed for proper server-side pagination."
 
 metadata:
   created_by: "main_agent"

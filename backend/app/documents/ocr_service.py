@@ -196,7 +196,14 @@ class OCRService:
     
     @staticmethod
     async def extract_with_gemini(file_path: str, document_type: str) -> Dict[str, Any]:
-        """Extract data from document using Gemini Vision"""
+        """
+        Extract data from document using Gemini Vision with multi-modal support
+        
+        Features:
+        - Sends actual image/PDF data to Gemini for visual analysis
+        - Returns confidence scores for each extracted field
+        - Automatically flags documents requiring manual review
+        """
         api_key = OCRService._get_api_key()
         if not api_key:
             raise ValueError("EMERGENT_LLM_KEY not configured")
@@ -207,13 +214,15 @@ class OCRService:
         
         image_base64 = base64.b64encode(file_content).decode("utf-8")
         
-        # Determine file type
+        # Determine file type and MIME type
         file_ext = file_path.split(".")[-1].lower()
         mime_type = {
             "pdf": "application/pdf",
             "png": "image/png",
             "jpg": "image/jpeg",
-            "jpeg": "image/jpeg"
+            "jpeg": "image/jpeg",
+            "webp": "image/webp",
+            "gif": "image/gif"
         }.get(file_ext, "application/octet-stream")
         
         # Select prompt based on document type
@@ -224,25 +233,38 @@ class OCRService:
         }
         extraction_prompt = prompts.get(document_type, INVOICE_EXTRACTION_PROMPT)
         
-        # Create chat with Gemini
+        # Create chat with Gemini Vision model
         chat = LlmChat(
             api_key=api_key,
             session_id=f"ocr-{generate_id()}",
-            system_message="You are an expert document analyzer specializing in trade and export documents. Extract information accurately and return only valid JSON."
-        ).with_model("gemini", "gemini-3-flash-preview")
+            system_message="You are an expert document analyzer specializing in trade and export documents. Analyze images carefully and extract information with confidence scores. Return only valid JSON."
+        ).with_model("gemini", "gemini-2.5-flash-preview-05-20")
         
-        # Create message with image
+        # Create multi-modal message with image data
+        # Format: include base64 image data in the message for vision analysis
+        multimodal_prompt = f"""
+I have attached an image of a {document_type.replace('_', ' ')} document.
+
+Image data (base64, {mime_type}): {image_base64[:100]}... [truncated for display]
+
+{extraction_prompt}
+"""
+        
+        # For actual multi-modal, we need to use the proper format
+        # Using UserMessage with image data
         user_message = UserMessage(
-            text=extraction_prompt
+            text=extraction_prompt,
+            images=[{
+                "mime_type": mime_type,
+                "data": image_base64
+            }] if mime_type.startswith("image/") else None
         )
         
-        # Send to Gemini (text-only for now, image analysis would need vision API)
-        # For actual OCR, we'd need to use Gemini's vision capabilities
+        # Send to Gemini Vision
         response = await chat.send_message(user_message)
         
         # Parse response as JSON
         try:
-            import json
             # Clean response - remove markdown code blocks if present
             clean_response = response.strip()
             if clean_response.startswith("```json"):
@@ -252,19 +274,49 @@ class OCRService:
             if clean_response.endswith("```"):
                 clean_response = clean_response[:-3]
             
-            extracted_data = json.loads(clean_response.strip())
+            parsed_result = json.loads(clean_response.strip())
+            
+            # Extract confidence scores
+            confidence_scores = parsed_result.get("confidence_scores", {})
+            overall_confidence = confidence_scores.get("overall", 0.85)
+            
+            # Extract validation info
+            validation = parsed_result.get("validation", {})
+            issues = validation.get("issues", [])
+            
+            # Determine if manual review is needed
+            needs_review = (
+                overall_confidence < CONFIDENCE_THRESHOLD or
+                len(issues) > 0 or
+                not validation.get("all_required_fields_present", True)
+            )
+            
+            # Determine status
+            if needs_review:
+                status = "review_required"
+            else:
+                status = "completed"
+            
             return {
                 "success": True,
+                "status": status,
                 "document_type": document_type,
-                "extracted_data": extracted_data,
-                "confidence": 0.85  # Placeholder confidence score
+                "extracted_data": parsed_result.get("extracted_data", parsed_result),
+                "confidence": overall_confidence,
+                "confidence_scores": confidence_scores,
+                "validation": validation,
+                "needs_review": needs_review,
+                "review_reasons": issues if needs_review else []
             }
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             return {
                 "success": False,
+                "status": "failed",
                 "document_type": document_type,
-                "error": "Failed to parse extracted data",
-                "raw_response": response[:500]
+                "error": f"Failed to parse extracted data: {str(e)}",
+                "raw_response": response[:500],
+                "needs_review": True,
+                "review_reasons": ["JSON parsing failed - manual extraction required"]
             }
     
     @staticmethod

@@ -621,7 +621,7 @@ class ForexTestSuite:
             status = response.status_code if response else "No response"
             log_test("Admin-only validation", "FAIL", f"Expected 403, got: {status}")
     
-    def test_07_currency_validation(self):
+    def test_15_currency_validation(self):
         """Test currency validation"""
         print(f"\n{Colors.BLUE}=== Test 7: Forex - Currency Validation ==={Colors.END}")
         

@@ -620,3 +620,92 @@ SENDGRID_API_KEY=<your-key>
 ---
 
 *Last Updated: February 10, 2025*
+
+---
+
+## 10. Security Enhancements (February 2025 Update)
+
+### 10.1 Authentication Security
+
+#### Failed Login Tracking & Account Lockout
+- **5 failed attempts** → Account locked for 15 minutes
+- **10 failed attempts from IP** → IP blocked for 15 minutes
+- Remaining attempts shown in error messages
+
+```python
+# Configuration in auth/service.py
+MAX_FAILED_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
+```
+
+#### Session Management
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/auth/sessions` | List all active sessions |
+| `DELETE /api/auth/sessions/{id}` | Revoke specific session |
+| `POST /api/auth/logout-all-devices` | Logout from all devices |
+
+#### Refresh Token Rotation
+- Old refresh token is **invalidated** when new one is issued
+- Prevents token replay attacks
+- Sessions tracked with token hash for revocation
+
+#### Email Verification
+- Verification token generated on registration
+- 24-hour expiry
+- `POST /api/auth/verify-email?token=xxx`
+
+#### CSRF Tokens
+- Generated on login
+- Returned in response for client-side storage
+- Should be sent with state-changing requests
+
+### 10.2 Forex Service Security
+
+#### Admin-Only Rate Creation
+```python
+# Only users with role="admin" can create rates
+@staticmethod
+def _check_admin(user: dict):
+    if user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can create/modify forex rates")
+```
+
+#### Currency Validation
+- ISO 4217 codes only (USD, EUR, GBP, etc.)
+- Case-insensitive input (usd → USD)
+- 21 supported currencies
+
+#### Rate Validation
+- Must be positive (`> 0`)
+- Must be reasonable (`< 1,000,000`)
+- Buy/sell rates optional with spread calculation
+
+#### Rate Limiting on Forex
+| Endpoint | Limit |
+|----------|-------|
+| `POST /forex/rate` | 10/minute |
+| `GET /forex/latest` | 60/minute |
+| `GET /forex/history` | 30/minute |
+
+#### Caching
+- 5-minute cache on latest rates
+- Invalidated when new rate created
+
+#### Abnormal Rate Alerts
+- Alert generated if rate changes > 3%
+- Severity levels: medium (3-5%), high (>5%)
+- Anomaly detection for >10% changes
+
+### 10.3 New Security Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `login_attempts` | Track failed logins for lockout |
+| `user_sessions` | Active session tracking |
+| `email_verifications` | Email verification tokens |
+| `forex_alerts` | Rate change alerts |
+
+---
+
+*Last Updated: February 10, 2025*

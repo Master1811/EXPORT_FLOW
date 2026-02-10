@@ -89,6 +89,30 @@ INDEXES = {
         IndexModel([("jti", ASCENDING)], unique=True, name="jti_idx"),
         IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0, name="ttl_idx"),
     ],
+    # NEW: Security-related collections
+    "login_attempts": [
+        IndexModel([("identifier", ASCENDING), ("type", ASCENDING)], unique=True, name="identifier_type_idx"),
+        IndexModel([("lockout_until", ASCENDING)], name="lockout_idx"),
+    ],
+    "user_sessions": [
+        IndexModel([("user_id", ASCENDING), ("is_active", ASCENDING)], name="user_active_idx"),
+        IndexModel([("token_hash", ASCENDING)], name="token_hash_idx"),
+        IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0, name="ttl_idx"),
+    ],
+    "email_verifications": [
+        IndexModel([("token_hash", ASCENDING)], unique=True, name="token_hash_idx"),
+        IndexModel([("user_id", ASCENDING)], name="user_idx"),
+        IndexModel([("expires_at", ASCENDING)], expireAfterSeconds=0, name="ttl_idx"),
+    ],
+    # NEW: Forex collections
+    "forex_rates": [
+        IndexModel([("currency", ASCENDING), ("timestamp", DESCENDING)], name="currency_time_idx"),
+        IndexModel([("company_id", ASCENDING), ("timestamp", DESCENDING)], name="company_time_idx"),
+    ],
+    "forex_alerts": [
+        IndexModel([("company_id", ASCENDING), ("acknowledged", ASCENDING)], name="company_ack_idx"),
+        IndexModel([("timestamp", DESCENDING)], name="time_idx"),
+    ],
 }
 
 

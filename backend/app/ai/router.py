@@ -62,6 +62,7 @@ async def ai_query(request: Request, response: Response, data: AIQueryRequest, u
 @limiter.limit("30/minute")
 async def get_chat_history(
     request: Request,
+    response: Response,
     session_id: Optional[str] = Query(None, max_length=100),
     limit: int = Query(default=20, ge=1, le=100),
     user: dict = Depends(get_current_user)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Query, Request
+from fastapi import APIRouter, Depends, UploadFile, File, Query, Request, HTTPException
 from typing import Dict, Any, List
 from ..core.dependencies import get_current_user
 from ..core.rate_limiting import ocr_process_limit, limiter
@@ -7,6 +7,59 @@ from .service import DocumentService
 from .ocr_service import OCRService
 
 router = APIRouter(tags=["Documents"])
+
+# File validation constants
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+ALLOWED_EXTENSIONS = {'.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif'}
+BLOCKED_EXTENSIONS = {'.exe', '.bat', '.cmd', '.sh', '.zip', '.rar', '.7z', '.tar', '.gz', '.js', '.py', '.php'}
+
+
+def validate_file(file: UploadFile, content: bytes):
+    """Validate uploaded file for size and type"""
+    # Check file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)} MB"
+        )
+    
+    # Get file extension
+    filename = file.filename or ""
+    ext = '.' + filename.split('.')[-1].lower() if '.' in filename else ''
+    
+    # Block dangerous file types
+    if ext in BLOCKED_EXTENSIONS:
+        raise HTTPException(
+            status_code=415,
+            detail=f"File type '{ext}' is not allowed. Blocked for security reasons."
+        )
+    
+    # Check if extension is allowed
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Invalid file type '{ext}'. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
+    
+    # Check content type
+    content_type = file.content_type or ""
+    valid_content_types = {
+        'application/pdf',
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+        'image/webp',
+        'image/gif'
+    }
+    
+    if content_type and content_type not in valid_content_types:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Invalid content type '{content_type}'"
+        )
+    
+    return True
+
 
 @router.post("/shipments/{shipment_id}/invoice", response_model=DocumentResponse)
 async def create_invoice(shipment_id: str, data: InvoiceCreate, user: dict = Depends(get_current_user)):
@@ -29,8 +82,12 @@ async def upload_document(
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user)
 ):
-    """Upload a document file (PDF, PNG, JPG)"""
+    """Upload a document file (PDF, PNG, JPG). Max 20MB."""
     content = await file.read()
+    
+    # Validate file before processing
+    validate_file(file, content)
+    
     return await OCRService.save_uploaded_file(content, file.filename, user)
 
 @router.post("/documents/ocr/process")

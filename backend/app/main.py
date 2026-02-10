@@ -157,6 +157,16 @@ def create_app() -> FastAPI:
     async def get_metrics():
         return {"uptime": "99.9%", "requests_today": 1250, "avg_response_time": "45ms"}
 
+    @app.get("/api/metrics/database")
+    async def get_database_metrics():
+        """Get database connection pool statistics"""
+        pool_stats = await get_pool_stats()
+        return {
+            "status": "healthy" if "error" not in pool_stats else "degraded",
+            "pool": pool_stats,
+            "timestamp": now_iso()
+        }
+
     @app.get("/api/audit/logs")
     async def get_audit_logs(limit: int = 100):
         logs = await db.audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)

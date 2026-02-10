@@ -21,13 +21,13 @@ def get_user_agent(request: Request) -> str:
 
 @router.post("/register")
 @auth_register_limit
-async def register(request: Request, data: UserCreate):
+async def register(request: Request, response: Response, data: UserCreate):
     """Register a new user. Returns access and refresh tokens. Rate limited: 3/minute per IP."""
     return await AuthService.register(data, ip_address=get_client_ip(request))
 
 @router.post("/login")
 @auth_login_limit
-async def login(request: Request, data: UserLogin):
+async def login(request: Request, response: Response, data: UserLogin):
     """Login user. Returns access token (15 min) and refresh token (7 days). Rate limited: 5/minute per IP."""
     return await AuthService.login(
         data, 

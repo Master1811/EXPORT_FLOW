@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { FixedSizeList as List } from 'react-window';
 import { useDebouncedCallback } from 'use-debounce';
 import { api } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -24,6 +23,16 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import EmptyState from '../components/EmptyState';
+
+// Virtualization with dynamic import (lazy loading)
+let VirtualizedList = null;
+try {
+  // Dynamic import to avoid build issues
+  const ReactWindow = require('react-window');
+  VirtualizedList = ReactWindow.FixedSizeList;
+} catch (e) {
+  console.warn('react-window not available, using standard rendering');
+}
 
 // Memoized constants
 const STATUS_COLORS = {

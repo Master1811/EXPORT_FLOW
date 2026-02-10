@@ -113,6 +113,16 @@ INDEXES = {
         IndexModel([("company_id", ASCENDING), ("acknowledged", ASCENDING)], name="company_ack_idx"),
         IndexModel([("timestamp", DESCENDING)], name="time_idx"),
     ],
+    # AI usage tracking
+    "ai_usage": [
+        IndexModel([("company_id", ASCENDING), ("created_at", DESCENDING)], name="company_time_idx"),
+        IndexModel([("user_id", ASCENDING), ("created_at", DESCENDING)], name="user_time_idx"),
+    ],
+    "ai_chat_history": [
+        IndexModel([("user_id", ASCENDING), ("session_id", ASCENDING)], name="user_session_idx"),
+        IndexModel([("session_id", ASCENDING), ("created_at", DESCENDING)], name="session_time_idx"),
+        IndexModel([("company_id", ASCENDING)], name="company_idx"),
+    ],
 }
 
 

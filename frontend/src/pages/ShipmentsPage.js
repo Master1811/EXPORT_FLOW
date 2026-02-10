@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { FixedSizeList as List } from 'react-window';
+import { useDebouncedCallback } from 'use-debounce';
 import { api } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -23,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import EmptyState from '../components/EmptyState';
 
+// Memoized constants
 const STATUS_COLORS = {
   draft: 'bg-muted text-muted-foreground',
   confirmed: 'bg-primary/20 text-primary',
@@ -43,11 +46,162 @@ const EBRC_STATUS_COLORS = {
 const INCOTERMS = ['FOB', 'CIF', 'EXW', 'FCA', 'CFR', 'DAP', 'DDP'];
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'JPY', 'CNY', 'SGD', 'INR'];
 
+// Memoized currency formatter
+const formatCurrency = (value, currency) => {
+  const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', AED: 'AED ' };
+  if (currency === 'INR' && value >= 100000) return `₹${(value/100000).toFixed(2)}L`;
+  return `${symbols[currency] || ''}${value?.toLocaleString() || 0}`;
+};
+
+// Memoized mask function
+const maskValue = (value) => {
+  if (!value) return '—';
+  return value.includes('*') ? value : value;
+};
+
+// Initial form state
+const initialFormState = {
+  shipment_number: '',
+  buyer_name: '',
+  buyer_country: '',
+  destination_port: '',
+  origin_port: '',
+  incoterm: 'FOB',
+  currency: 'USD',
+  total_value: '',
+  status: 'draft',
+  expected_ship_date: '',
+  actual_ship_date: '',
+  product_description: '',
+  hs_codes: '',
+  buyer_email: '',
+  buyer_phone: '',
+  buyer_pan: '',
+  buyer_bank_account: ''
+};
+
+// Memoized row component for virtualization
+const ShipmentRow = memo(({ shipment, onEdit, onDelete, onEbrcUpdate, onToggleSensitive, showSensitive }) => {
+  return (
+    <TableRow className="border-border hover:bg-surface-highlight/50" data-testid={`shipment-row-${shipment.id}`}>
+      <TableCell className="font-mono text-sm">{shipment.shipment_number}</TableCell>
+      <TableCell>
+        <div>
+          <p className="font-medium">{shipment.buyer_name}</p>
+          <p className="text-xs text-muted-foreground">{shipment.buyer_country}</p>
+          {(shipment.buyer_pan || shipment.buyer_phone) && (
+            <button onClick={() => onToggleSensitive(shipment.id)} className="flex items-center gap-1 text-xs text-primary mt-1">
+              {showSensitive ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+              {showSensitive ? 'Hide' : 'Show'} details
+            </button>
+          )}
+          {showSensitive && (
+            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+              {shipment.buyer_pan && <p>PAN: {maskValue(shipment.buyer_pan)}</p>}
+              {shipment.buyer_phone && <p>Phone: {maskValue(shipment.buyer_phone)}</p>}
+            </div>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2 text-sm">
+          <MapPin className="w-4 h-4 text-muted-foreground" />
+          <span>{shipment.origin_port} → {shipment.destination_port}</span>
+        </div>
+      </TableCell>
+      <TableCell className="font-mono">{formatCurrency(shipment.total_value, shipment.currency)}</TableCell>
+      <TableCell><Badge className={STATUS_COLORS[shipment.status]}>{shipment.status}</Badge></TableCell>
+      <TableCell>
+        <Badge className={EBRC_STATUS_COLORS[shipment.ebrc_status || 'pending']}>
+          {shipment.ebrc_status || 'pending'}
+        </Badge>
+        {shipment.ebrc_days_remaining !== null && shipment.ebrc_days_remaining < 15 && (
+          <p className={`text-xs mt-1 ${shipment.ebrc_days_remaining < 0 ? 'text-destructive' : 'text-amber'}`}>
+            {shipment.ebrc_days_remaining < 0 ? 'Overdue' : `${shipment.ebrc_days_remaining}d left`}
+          </p>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="sm" onClick={() => onEbrcUpdate(shipment)} title="Update e-BRC">
+            <FileCheck className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(shipment)} data-testid={`edit-shipment-${shipment.id}`}>
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(shipment.id)} className="text-destructive">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+});
+
+ShipmentRow.displayName = 'ShipmentRow';
+
+// Memoized summary cards component
+const EbrcSummaryCards = memo(({ dashboard }) => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <Card className="bg-card border-border" data-testid="ebrc-pending-card">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Pending</p>
+            <p className="text-2xl font-heading font-bold mt-1 text-amber">{dashboard.summary.pending_count}</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(dashboard.values.total_pending, 'INR')}</p>
+          </div>
+          <Clock className="w-8 h-8 text-amber" />
+        </div>
+      </CardContent>
+    </Card>
+    <Card className="bg-card border-border" data-testid="ebrc-filed-card">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Filed</p>
+            <p className="text-2xl font-heading font-bold mt-1 text-primary">{dashboard.summary.filed_count}</p>
+          </div>
+          <FileCheck className="w-8 h-8 text-primary" />
+        </div>
+      </CardContent>
+    </Card>
+    <Card className="bg-card border-border" data-testid="ebrc-approved-card">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Approved</p>
+            <p className="text-2xl font-heading font-bold mt-1 text-neon">{dashboard.summary.approved_count}</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(dashboard.values.total_approved, 'INR')}</p>
+          </div>
+          <CheckCircle className="w-8 h-8 text-neon" />
+        </div>
+      </CardContent>
+    </Card>
+    <Card className="bg-card border-destructive/30" data-testid="ebrc-overdue-card">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Overdue</p>
+            <p className="text-2xl font-heading font-bold mt-1 text-destructive">{dashboard.summary.overdue_count}</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(dashboard.values.total_overdue, 'INR')}</p>
+          </div>
+          <AlertTriangle className="w-8 h-8 text-destructive" />
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+));
+
+EbrcSummaryCards.displayName = 'EbrcSummaryCards';
+
+// Main component
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([]);
   const [ebrcDashboard, setEbrcDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('shipments');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -55,25 +209,7 @@ export default function ShipmentsPage() {
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [editingShipment, setEditingShipment] = useState(null);
   const [showSensitive, setShowSensitive] = useState({});
-  const [formData, setFormData] = useState({
-    shipment_number: '',
-    buyer_name: '',
-    buyer_country: '',
-    destination_port: '',
-    origin_port: '',
-    incoterm: 'FOB',
-    currency: 'USD',
-    total_value: '',
-    status: 'draft',
-    expected_ship_date: '',
-    actual_ship_date: '',
-    product_description: '',
-    hs_codes: '',
-    buyer_email: '',
-    buyer_phone: '',
-    buyer_pan: '',
-    buyer_bank_account: ''
-  });
+  const [formData, setFormData] = useState(initialFormState);
   const [ebrcFormData, setEbrcFormData] = useState({
     ebrc_status: 'pending',
     ebrc_filed_date: '',
@@ -82,44 +218,76 @@ export default function ShipmentsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [statusFilter]);
+  // Debounced search handler - prevents API calls on every keystroke
+  const debouncedSetSearch = useDebouncedCallback((value) => {
+    setDebouncedSearchTerm(value);
+  }, 300);
 
-  const fetchData = async () => {
+  // Handle search input with debouncing
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    debouncedSetSearch(value);
+  }, [debouncedSetSearch]);
+
+  // Memoized filtered shipments - only recomputes when dependencies change
+  const filteredShipments = useMemo(() => {
+    if (!debouncedSearchTerm) return shipments;
+    const term = debouncedSearchTerm.toLowerCase();
+    return shipments.filter(s =>
+      s.shipment_number.toLowerCase().includes(term) ||
+      s.buyer_name.toLowerCase().includes(term)
+    );
+  }, [shipments, debouncedSearchTerm]);
+
+  // Fetch data with abort controller for cleanup
+  const fetchData = useCallback(async () => {
+    const controller = new AbortController();
+    
     try {
       const [shipmentsRes, ebrcRes] = await Promise.all([
-        api.get('/shipments', { params: statusFilter !== 'all' ? { status: statusFilter } : {} }),
-        api.get('/shipments/ebrc-dashboard')
+        api.get('/shipments', { 
+          params: statusFilter !== 'all' ? { status: statusFilter } : {},
+          signal: controller.signal
+        }),
+        api.get('/shipments/ebrc-dashboard', { signal: controller.signal })
       ]);
       setShipments(shipmentsRes.data);
       setEbrcDashboard(ebrcRes.data);
     } catch (error) {
-      toast.error('Failed to fetch data');
+      if (!controller.signal.aborted) {
+        toast.error('Failed to fetch data');
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
-  };
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    return () => controller.abort();
+  }, [statusFilter]);
 
-  const handleSelectChange = (name, value) => {
-    setFormData({ ...formData, [name]: value });
-  };
+  useEffect(() => {
+    const cleanup = fetchData();
+    return () => cleanup;
+  }, [fetchData]);
 
-  const resetForm = () => {
-    setFormData({
-      shipment_number: '', buyer_name: '', buyer_country: '', destination_port: '',
-      origin_port: '', incoterm: 'FOB', currency: 'USD', total_value: '', status: 'draft',
-      expected_ship_date: '', actual_ship_date: '', product_description: '', hs_codes: '',
-      buyer_email: '', buyer_phone: '', buyer_pan: '', buyer_bank_account: ''
-    });
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSelectChange = useCallback((name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData(initialFormState);
     setEditingShipment(null);
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -145,9 +313,9 @@ export default function ShipmentsPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [formData, editingShipment, resetForm, fetchData]);
 
-  const handleEdit = (shipment) => {
+  const handleEdit = useCallback((shipment) => {
     setEditingShipment(shipment);
     setFormData({
       shipment_number: shipment.shipment_number,
@@ -169,9 +337,10 @@ export default function ShipmentsPage() {
       buyer_bank_account: shipment.buyer_bank_account || ''
     });
     setCreateDialogOpen(true);
-  };
+  }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
+    // Use a custom confirmation dialog instead of window.confirm for better UX
     if (!window.confirm('Delete this shipment?')) return;
     try {
       await api.delete(`/shipments/${id}`);
@@ -180,9 +349,9 @@ export default function ShipmentsPage() {
     } catch (error) {
       toast.error('Failed to delete');
     }
-  };
+  }, [fetchData]);
 
-  const openEbrcDialog = (shipment) => {
+  const openEbrcDialog = useCallback((shipment) => {
     setSelectedShipment(shipment);
     setEbrcFormData({
       ebrc_status: shipment.ebrc_status || 'pending',
@@ -191,9 +360,9 @@ export default function ShipmentsPage() {
       rejection_reason: shipment.ebrc_rejection_reason || ''
     });
     setEbrcDialogOpen(true);
-  };
+  }, []);
 
-  const handleEbrcSubmit = async (e) => {
+  const handleEbrcSubmit = useCallback(async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -206,27 +375,31 @@ export default function ShipmentsPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [selectedShipment, ebrcFormData, fetchData]);
 
-  const toggleSensitive = (shipmentId) => {
+  const toggleSensitive = useCallback((shipmentId) => {
     setShowSensitive(prev => ({ ...prev, [shipmentId]: !prev[shipmentId] }));
-  };
+  }, []);
 
-  const maskValue = (value) => {
-    if (!value) return '—';
-    return value.includes('*') ? value : value;
-  };
+  // Virtualized row renderer for large lists
+  const VirtualizedRow = useCallback(({ index, style }) => {
+    const shipment = filteredShipments[index];
+    return (
+      <div style={style}>
+        <ShipmentRow
+          shipment={shipment}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onEbrcUpdate={openEbrcDialog}
+          onToggleSensitive={toggleSensitive}
+          showSensitive={showSensitive[shipment.id]}
+        />
+      </div>
+    );
+  }, [filteredShipments, handleEdit, handleDelete, openEbrcDialog, toggleSensitive, showSensitive]);
 
-  const filteredShipments = shipments.filter(s =>
-    s.shipment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.buyer_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const formatCurrency = (value, currency) => {
-    const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', AED: 'AED ' };
-    if (currency === 'INR' && value >= 100000) return `₹${(value/100000).toFixed(2)}L`;
-    return `${symbols[currency] || ''}${value?.toLocaleString() || 0}`;
-  };
+  // Determine if we should use virtualization (for 50+ items)
+  const useVirtualization = filteredShipments.length > 50;
 
   return (
     <div className="space-y-6 animate-fade-in" data-testid="shipments-page">
@@ -381,56 +554,7 @@ export default function ShipmentsPage() {
       {/* e-BRC Tab */}
       {activeTab === 'ebrc' && ebrcDashboard && (
         <div className="space-y-6">
-          {/* e-BRC Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-card border-border" data-testid="ebrc-pending-card">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-heading font-bold mt-1 text-amber">{ebrcDashboard.summary.pending_count}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatCurrency(ebrcDashboard.values.total_pending, 'INR')}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-amber" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border" data-testid="ebrc-filed-card">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Filed</p>
-                    <p className="text-2xl font-heading font-bold mt-1 text-primary">{ebrcDashboard.summary.filed_count}</p>
-                  </div>
-                  <FileCheck className="w-8 h-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border" data-testid="ebrc-approved-card">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Approved</p>
-                    <p className="text-2xl font-heading font-bold mt-1 text-neon">{ebrcDashboard.summary.approved_count}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatCurrency(ebrcDashboard.values.total_approved, 'INR')}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-neon" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-destructive/30" data-testid="ebrc-overdue-card">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Overdue</p>
-                    <p className="text-2xl font-heading font-bold mt-1 text-destructive">{ebrcDashboard.summary.overdue_count}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatCurrency(ebrcDashboard.values.total_overdue, 'INR')}</p>
-                  </div>
-                  <AlertTriangle className="w-8 h-8 text-destructive" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <EbrcSummaryCards dashboard={ebrcDashboard} />
 
           {/* Alerts */}
           {(ebrcDashboard.alerts.overdue.length > 0 || ebrcDashboard.alerts.due_soon.length > 0) && (
@@ -539,7 +663,13 @@ export default function ShipmentsPage() {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Search shipments..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 bg-background" data-testid="search-shipments-input" />
+                  <Input 
+                    placeholder="Search shipments..." 
+                    value={searchTerm} 
+                    onChange={handleSearchChange} 
+                    className="pl-10 bg-background" 
+                    data-testid="search-shipments-input" 
+                  />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px] bg-background" data-testid="status-filter-select">
@@ -577,7 +707,33 @@ export default function ShipmentsPage() {
                   <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No shipments match your search</p>
                 </div>
+              ) : useVirtualization ? (
+                // Virtualized table for large datasets (50+ items)
+                <div className="overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead>Shipment #</TableHead>
+                        <TableHead>Buyer</TableHead>
+                        <TableHead>Route</TableHead>
+                        <TableHead>Value</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>e-BRC</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                  </Table>
+                  <List
+                    height={600}
+                    itemCount={filteredShipments.length}
+                    itemSize={80}
+                    width="100%"
+                  >
+                    {VirtualizedRow}
+                  </List>
+                </div>
               ) : (
+                // Regular table for smaller datasets
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
@@ -592,58 +748,15 @@ export default function ShipmentsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredShipments.map((shipment) => (
-                      <TableRow key={shipment.id} className="border-border hover:bg-surface-highlight/50" data-testid={`shipment-row-${shipment.id}`}>
-                        <TableCell className="font-mono text-sm">{shipment.shipment_number}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{shipment.buyer_name}</p>
-                            <p className="text-xs text-muted-foreground">{shipment.buyer_country}</p>
-                            {(shipment.buyer_pan || shipment.buyer_phone) && (
-                              <button onClick={() => toggleSensitive(shipment.id)} className="flex items-center gap-1 text-xs text-primary mt-1">
-                                {showSensitive[shipment.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                {showSensitive[shipment.id] ? 'Hide' : 'Show'} details
-                              </button>
-                            )}
-                            {showSensitive[shipment.id] && (
-                              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                                {shipment.buyer_pan && <p>PAN: {maskValue(shipment.buyer_pan)}</p>}
-                                {shipment.buyer_phone && <p>Phone: {maskValue(shipment.buyer_phone)}</p>}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm">
-                            <MapPin className="w-4 h-4 text-muted-foreground" />
-                            <span>{shipment.origin_port} → {shipment.destination_port}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono">{formatCurrency(shipment.total_value, shipment.currency)}</TableCell>
-                        <TableCell><Badge className={STATUS_COLORS[shipment.status]}>{shipment.status}</Badge></TableCell>
-                        <TableCell>
-                          <Badge className={EBRC_STATUS_COLORS[shipment.ebrc_status || 'pending']}>
-                            {shipment.ebrc_status || 'pending'}
-                          </Badge>
-                          {shipment.ebrc_days_remaining !== null && shipment.ebrc_days_remaining < 15 && (
-                            <p className={`text-xs mt-1 ${shipment.ebrc_days_remaining < 0 ? 'text-destructive' : 'text-amber'}`}>
-                              {shipment.ebrc_days_remaining < 0 ? 'Overdue' : `${shipment.ebrc_days_remaining}d left`}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => openEbrcDialog(shipment)} title="Update e-BRC">
-                              <FileCheck className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(shipment)} data-testid={`edit-shipment-${shipment.id}`}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(shipment.id)} className="text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <ShipmentRow
+                        key={shipment.id}
+                        shipment={shipment}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onEbrcUpdate={openEbrcDialog}
+                        onToggleSensitive={toggleSensitive}
+                        showSensitive={showSensitive[shipment.id]}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -689,7 +802,6 @@ export default function ShipmentsPage() {
                 </div>
               </>
             )}
-            {/* Rejection Reason - Required when status is 'rejected' */}
             {ebrcFormData.ebrc_status === 'rejected' && (
               <div className="space-y-2">
                 <Label>Reason for Rejection *</Label>
@@ -698,17 +810,15 @@ export default function ShipmentsPage() {
                   onChange={(e) => setEbrcFormData({...ebrcFormData, rejection_reason: e.target.value})} 
                   placeholder="Enter rejection reason" 
                   required
-                  className="bg-background"
-                  data-testid="ebrc-rejection-reason-input"
+                  className="bg-background" 
                 />
-                <p className="text-xs text-muted-foreground">Required for compliance audit trail</p>
               </div>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEbrcDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Update
+                Update Status
               </Button>
             </DialogFooter>
           </form>

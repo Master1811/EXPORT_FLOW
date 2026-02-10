@@ -5,10 +5,16 @@ Extracts structured data from trade documents:
 - Packing Lists
 - Shipping Bills
 - Bank Certificates
+
+Features:
+- Multi-modal image analysis with base64 encoding
+- Confidence scoring for extracted data
+- Automatic flagging of low-confidence extractions
 """
 import os
 import base64
-from typing import Optional, Dict, Any
+import json
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from dotenv import load_dotenv
 from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -21,79 +27,129 @@ load_dotenv()
 UPLOAD_DIR = "/tmp/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# OCR extraction prompts
+# Confidence threshold for automatic flagging
+CONFIDENCE_THRESHOLD = 0.85
+
+# OCR extraction prompts with confidence scoring
 INVOICE_EXTRACTION_PROMPT = """
-Analyze this commercial invoice image and extract the following information in JSON format:
+Analyze this commercial invoice image and extract the following information.
+
+Return a JSON object with this EXACT structure:
 {
-    "invoice_number": "string",
-    "invoice_date": "YYYY-MM-DD",
-    "seller_name": "string",
-    "seller_address": "string",
-    "seller_gstin": "string (if visible)",
-    "buyer_name": "string",
-    "buyer_address": "string",
-    "buyer_country": "string",
-    "currency": "string (e.g., USD, EUR, INR)",
-    "total_amount": number,
-    "line_items": [
-        {
-            "description": "string",
-            "quantity": number,
-            "unit_price": number,
-            "amount": number,
-            "hs_code": "string (if visible)"
-        }
-    ],
-    "payment_terms": "string (if visible)",
-    "incoterm": "string (e.g., FOB, CIF)",
-    "port_of_loading": "string (if visible)",
-    "port_of_discharge": "string (if visible)"
+    "extracted_data": {
+        "invoice_number": "string or null",
+        "invoice_date": "YYYY-MM-DD or null",
+        "seller_name": "string or null",
+        "seller_address": "string or null",
+        "seller_gstin": "string or null",
+        "buyer_name": "string or null",
+        "buyer_address": "string or null",
+        "buyer_country": "string or null",
+        "currency": "string (e.g., USD, EUR, INR) or null",
+        "total_amount": number or null,
+        "line_items": [
+            {
+                "description": "string",
+                "quantity": number,
+                "unit_price": number,
+                "amount": number,
+                "hs_code": "string or null"
+            }
+        ],
+        "payment_terms": "string or null",
+        "incoterm": "string (e.g., FOB, CIF) or null",
+        "port_of_loading": "string or null",
+        "port_of_discharge": "string or null"
+    },
+    "confidence_scores": {
+        "overall": 0.0 to 1.0,
+        "invoice_number": 0.0 to 1.0,
+        "total_amount": 0.0 to 1.0,
+        "buyer_name": 0.0 to 1.0,
+        "line_items": 0.0 to 1.0
+    },
+    "validation": {
+        "line_items_sum_matches_total": true or false,
+        "all_required_fields_present": true or false,
+        "issues": ["list of any validation issues found"]
+    }
 }
 
-Only return the JSON object, no additional text. If a field is not visible, use null.
+IMPORTANT: 
+1. Calculate confidence based on image clarity and field visibility
+2. Set confidence to 0.0 for fields not visible or unclear
+3. Verify that line_items amounts sum to total_amount
+4. Only return valid JSON, no additional text
 """
 
 SHIPPING_BILL_EXTRACTION_PROMPT = """
-Analyze this shipping bill image and extract the following information in JSON format:
+Analyze this shipping bill image and extract the following information.
+
+Return a JSON object with this EXACT structure:
 {
-    "sb_number": "string",
-    "sb_date": "YYYY-MM-DD",
-    "exporter_name": "string",
-    "exporter_iec": "string",
-    "consignee_name": "string",
-    "consignee_country": "string",
-    "port_code": "string",
-    "fob_value": number,
-    "currency": "string",
-    "hs_codes": ["string"],
-    "drawback_amount": number (if visible, else null),
-    "igst_amount": number (if visible, else null)
+    "extracted_data": {
+        "sb_number": "string or null",
+        "sb_date": "YYYY-MM-DD or null",
+        "exporter_name": "string or null",
+        "exporter_iec": "string or null",
+        "consignee_name": "string or null",
+        "consignee_country": "string or null",
+        "port_code": "string or null",
+        "fob_value": number or null,
+        "currency": "string or null",
+        "hs_codes": ["array of strings"],
+        "drawback_amount": number or null,
+        "igst_amount": number or null
+    },
+    "confidence_scores": {
+        "overall": 0.0 to 1.0,
+        "sb_number": 0.0 to 1.0,
+        "fob_value": 0.0 to 1.0,
+        "hs_codes": 0.0 to 1.0
+    },
+    "validation": {
+        "all_required_fields_present": true or false,
+        "issues": ["list of any validation issues found"]
+    }
 }
 
-Only return the JSON object, no additional text.
+Only return valid JSON, no additional text.
 """
 
 PACKING_LIST_EXTRACTION_PROMPT = """
-Analyze this packing list image and extract the following information in JSON format:
+Analyze this packing list image and extract the following information.
+
+Return a JSON object with this EXACT structure:
 {
-    "packing_list_number": "string",
-    "date": "YYYY-MM-DD",
-    "invoice_reference": "string (if visible)",
-    "total_packages": number,
-    "gross_weight_kg": number,
-    "net_weight_kg": number,
-    "dimensions": "string (if visible)",
-    "packages": [
-        {
-            "package_number": "string",
-            "description": "string",
-            "quantity": number,
-            "weight_kg": number
-        }
-    ]
+    "extracted_data": {
+        "packing_list_number": "string or null",
+        "date": "YYYY-MM-DD or null",
+        "invoice_reference": "string or null",
+        "total_packages": number or null,
+        "gross_weight_kg": number or null,
+        "net_weight_kg": number or null,
+        "dimensions": "string or null",
+        "packages": [
+            {
+                "package_number": "string",
+                "description": "string",
+                "quantity": number,
+                "weight_kg": number
+            }
+        ]
+    },
+    "confidence_scores": {
+        "overall": 0.0 to 1.0,
+        "total_packages": 0.0 to 1.0,
+        "weights": 0.0 to 1.0
+    },
+    "validation": {
+        "weights_consistent": true or false,
+        "issues": ["list of any validation issues found"]
+    }
 }
 
-Only return the JSON object, no additional text.
+Only return valid JSON, no additional text.
 """
 
 

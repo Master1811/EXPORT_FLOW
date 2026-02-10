@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from typing import Dict, Any, Optional, Tuple
 import logging

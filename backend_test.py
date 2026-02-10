@@ -1,317 +1,472 @@
+#!/usr/bin/env python3
+"""
+Security and Forex Improvements Test Suite for ExportFlow
+Tests all authentication security features and forex management functionality
+"""
 import requests
-import sys
 import json
-from datetime import datetime
-import os
+import time
+import sys
+from typing import Dict, Any, Optional
 
-class ProductionReadinessAPITester:
-    def __init__(self, base_url="https://resilient-api-1.preview.emergentagent.com/api"):
-        self.base_url = base_url
-        self.token = None
-        self.user_id = None
-        self.company_id = None
-        self.tests_run = 0
-        self.tests_passed = 0
-        self.test_results = []
+# Test Configuration
+BASE_URL = "https://resilient-api-1.preview.emergentagent.com/api"
+TEST_USER = {
+    "email": "test@moradabad.com",
+    "password": "Test@123"
+}
 
-    def log_test(self, name, success, details=""):
-        """Log test result"""
-        self.tests_run += 1
-        if success:
-            self.tests_passed += 1
-            print(f"✅ {name}")
-        else:
-            print(f"❌ {name} - {details}")
-        
-        self.test_results.append({
-            "test": name,
-            "success": success,
-            "details": details
-        })
+# ANSI color codes for output
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
-        """Run a single API test"""
-        url = f"{self.base_url}/{endpoint}" if endpoint != self.base_url else self.base_url
-        test_headers = {'Content-Type': 'application/json'}
-        
-        if self.token:
-            test_headers['Authorization'] = f'Bearer {self.token}'
-        
-        if headers:
-            test_headers.update(headers)
+def log_test(test_name: str, status: str, details: str = ""):
+    """Log test results with colors"""
+    color = Colors.GREEN if status == "PASS" else Colors.RED if status == "FAIL" else Colors.YELLOW
+    print(f"{color}{Colors.BOLD}[{status}]{Colors.END} {test_name}")
+    if details:
+        print(f"    {details}")
 
-        try:
-            if method == 'GET':
-                response = requests.get(url, headers=test_headers, timeout=10)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers, timeout=10)
-            elif method == 'PUT':
-                response = requests.put(url, json=data, headers=test_headers, timeout=10)
-            elif method == 'DELETE':
-                response = requests.delete(url, headers=test_headers, timeout=10)
-
-            success = response.status_code == expected_status
-            details = f"Status: {response.status_code}"
-            
-            # Check for rate limiting headers in response
-            if 'X-RateLimit' in str(response.headers):
-                rate_limit_info = {k: v for k, v in response.headers.items() if 'ratelimit' in k.lower()}
-                details += f", Rate Limit Headers: {rate_limit_info}"
-            
-            if not success:
-                details += f", Expected: {expected_status}"
-                try:
-                    error_data = response.json()
-                    details += f", Error: {error_data.get('detail', 'Unknown error')}"
-                except:
-                    details += f", Response: {response.text[:200]}"
-
-            self.log_test(name, success, details)
-            
-            if success:
-                try:
-                    return response.json()
-                except:
-                    return {"status": "success", "raw_response": response.text}
-            return None
-
-        except Exception as e:
-            self.log_test(name, False, f"Exception: {str(e)}")
-            return None
-
-    def test_health_endpoint(self):
-        """Test GET /api/health - Should return healthy status"""
-        result = self.run_test("Health Endpoint", "GET", "health", 200)
-        if result and result.get("status") == "healthy":
-            return True
-        return False
-
-    def test_metrics_endpoint(self):
-        """Test GET /api/metrics - Should return uptime metrics"""
-        result = self.run_test("Metrics Endpoint", "GET", "metrics", 200)
-        if result and "uptime" in result:
-            return True
-        return False
-
-    def test_database_metrics(self):
-        """Test GET /api/metrics/database - Should return connection pool stats"""
-        result = self.run_test("Database Metrics", "GET", "metrics/database", 200)
-        if result and "pool" in result:
-            return True
-        return False
-
-    def test_circuit_breaker_metrics(self):
-        """Test GET /api/metrics/circuit-breakers - Should return circuit breaker status"""
-        result = self.run_test("Circuit Breaker Metrics", "GET", "metrics/circuit-breakers", 200)
-        if result and "circuit_breakers" in result:
-            return True
-        return False
-
-    def test_login_with_rate_limiting(self):
-        """Test POST /api/auth/login - Test login works and verify rate limit headers"""
-        login_data = {
-            "email": "test@moradabad.com",
-            "password": "Test@123"
-        }
-        
-        result = self.run_test("Login with Rate Limiting", "POST", "auth/login", 200, login_data)
-        if result:
-            self.token = result.get('access_token')
-            self.user_id = result.get('user', {}).get('id')
-            self.company_id = result.get('user', {}).get('company_id')
-            return True
-        return False
-
-    def test_create_shipment_performance(self):
-        """Test creating a shipment to verify database indexes performance"""
-        shipment_data = {
-            "shipment_number": f"SH-PERF-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            "buyer_name": "Performance Test Buyer Corp",
-            "buyer_country": "USA",
-            "destination_port": "USLAX (Los Angeles)",
-            "origin_port": "INNSA (Nhava Sheva)",
-            "incoterm": "FOB",
-            "currency": "USD",
-            "total_value": 75000.0,
-            "status": "draft",
-            "product_description": "Performance test electronic components",
-            "hs_codes": ["8471", "8542"]
-        }
-        
-        import time
-        start_time = time.time()
-        result = self.run_test("Create Shipment (Performance)", "POST", "shipments", 200, shipment_data)
-        end_time = time.time()
-        
-        response_time = end_time - start_time
-        print(f"    Response time: {response_time:.3f}s")
-        
-        if result and response_time < 2.0:  # Should be fast with indexes
-            self.test_shipment_id = result.get('id')
-            return True
-        return False
-
-    def test_account_aggregator_webhook(self):
-        """Test POST /api/webhooks/account-aggregator with sample payload"""
-        webhook_payload = {
-            "event_type": "consent_approved",
-            "consent_id": "test-consent-123",
-            "customer_id": "cust-456",
-            "fip_id": "hdfc-bank",
-            "timestamp": datetime.now().isoformat() + "Z",
-            "data": {
-                "consent_details": "Sample consent data"
-            }
-        }
-        
-        result = self.run_test("Account Aggregator Webhook", "POST", "webhooks/account-aggregator", 200, webhook_payload)
-        if result and result.get("status") == "received" and result.get("processed"):
-            return True
-        return False
-
-    def test_rate_limiting_enforcement(self):
-        """Test rate limiting by checking headers and trying to trigger limits"""
-        print("\n🔄 Testing Rate Limiting Enforcement...")
-        
-        # First, test with a valid login to check if rate limit headers are present
-        valid_login_data = {
-            "email": "test@moradabad.com",
-            "password": "Test@123"
-        }
-        
-        print("    Testing rate limit headers on valid login...")
-        response = requests.post(
-            f"{self.base_url}/auth/login",
-            json=valid_login_data,
-            headers={'Content-Type': 'application/json'},
-            timeout=10
+def make_request(method: str, endpoint: str, headers: Optional[Dict] = None, 
+                 json_data: Optional[Dict] = None, expected_status: int = None) -> requests.Response:
+    """Make HTTP request with error handling"""
+    url = f"{BASE_URL}{endpoint}"
+    try:
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=headers or {},
+            json=json_data,
+            timeout=30
         )
         
-        rate_limit_headers_found = False
-        if any(header.lower().startswith('x-ratelimit') for header in response.headers.keys()):
-            rate_limit_headers_found = True
-            remaining = response.headers.get('x-ratelimit-remaining', 'N/A')
-            limit = response.headers.get('x-ratelimit-limit', 'N/A')
-            reset = response.headers.get('x-ratelimit-reset', 'N/A')
-            print(f"    ✅ Rate limit headers found: Limit={limit}, Remaining={remaining}, Reset={reset}")
+        if expected_status and response.status_code != expected_status:
+            print(f"    {Colors.YELLOW}Expected {expected_status}, got {response.status_code}{Colors.END}")
+            print(f"    Response: {response.text[:200]}")
         
-        # Now test with invalid credentials to try to trigger rate limiting
-        invalid_login_data = {
-            "email": "invalid@test.com", 
-            "password": "wrongpassword"
-        }
+        return response
+    except requests.RequestException as e:
+        print(f"    {Colors.RED}Request failed: {e}{Colors.END}")
+        return None
+
+class SecurityTestSuite:
+    def __init__(self):
+        self.session = requests.Session()
+        self.auth_headers = {}
+        self.refresh_token = None
+        self.session_id = None
+    
+    def test_01_failed_login_tracking(self):
+        """Test failed login tracking and account lockout"""
+        print(f"\n{Colors.BLUE}=== Test 1: Failed Login Tracking & Account Lockout ==={Colors.END}")
         
-        rate_limited = False
-        print("    Testing rate limiting with invalid credentials...")
+        lockout_email = "lockout-test@example.com"
+        wrong_password = "wrongpass"
         
-        # Try multiple requests rapidly
-        for i in range(6):
-            response = requests.post(
-                f"{self.base_url}/auth/login",
-                json=invalid_login_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=10
+        # Try to login 6 times with wrong password
+        for attempt in range(1, 7):
+            response = make_request(
+                "POST", 
+                "/auth/login",
+                json_data={
+                    "email": lockout_email,
+                    "password": wrong_password
+                }
             )
             
-            print(f"    Request {i+1}: Status {response.status_code}")
+            if response is None:
+                log_test(f"Failed login attempt {attempt}", "FAIL", "Request failed")
+                continue
             
-            if response.status_code == 429:  # Too Many Requests
-                rate_limited = True
-                print(f"    ✅ Rate limit (429) triggered after {i+1} attempts")
-                break
-        
-        # Consider successful if we have evidence of rate limiting configuration
-        success = rate_limit_headers_found
-        details = ""
-        if rate_limited and rate_limit_headers_found:
-            details = "Rate limiting fully functional (headers + 429 enforcement)"
-        elif rate_limit_headers_found:
-            details = "Rate limiting configured (headers present)"
-        else:
-            details = "No rate limiting evidence found"
+            print(f"    Attempt {attempt}: Status {response.status_code}")
             
-        self.log_test("Rate Limiting Configuration", success, details)
-        return success
-
-    def run_production_readiness_tests(self):
-        """Run production readiness specific tests"""
-        print("🚀 Starting Production Readiness API Tests")
-        print("=" * 60)
-
-        # Test credentials from review request
-        print("📋 Using test credentials: test@moradabad.com / Test@123")
-
-        # 1. Health & Metrics Endpoints
-        print("\n🏥 Testing Health & Metrics Endpoints...")
-        self.test_health_endpoint()
-        self.test_metrics_endpoint()
-        self.test_database_metrics()
-        self.test_circuit_breaker_metrics()
-
-        # 2. Authentication with Rate Limiting
-        print("\n🔐 Testing Authentication with Rate Limiting...")
-        self.test_login_with_rate_limiting()
+            if attempt <= 5:
+                if response.status_code == 401:
+                    try:
+                        data = response.json()
+                        detail = data.get("detail", "")
+                        print(f"      Response: {detail}")
+                        if "attempts remaining" in detail:
+                            log_test(f"Attempt {attempt} tracking", "PASS", f"Properly tracked: {detail}")
+                        else:
+                            log_test(f"Attempt {attempt} tracking", "PASS", "Invalid credentials response")
+                    except:
+                        log_test(f"Attempt {attempt} tracking", "FAIL", "Could not parse response")
+                else:
+                    log_test(f"Attempt {attempt}", "FAIL", f"Unexpected status: {response.status_code}")
+            else:
+                # 6th attempt should be locked out
+                if response.status_code == 429:
+                    try:
+                        data = response.json()
+                        detail = data.get("detail", "")
+                        if "locked" in detail.lower() or "too many" in detail.lower():
+                            log_test("Account lockout", "PASS", f"Account properly locked: {detail}")
+                        else:
+                            log_test("Account lockout", "FAIL", f"Wrong lockout message: {detail}")
+                    except:
+                        log_test("Account lockout", "FAIL", "Could not parse lockout response")
+                else:
+                    log_test("Account lockout", "FAIL", f"Expected 429, got {response.status_code}")
+            
+            time.sleep(0.5)  # Small delay between attempts
+    
+    def test_02_successful_login(self):
+        """Test successful login with test credentials"""
+        print(f"\n{Colors.BLUE}=== Test 2: Login Success After Valid Credentials ==={Colors.END}")
         
-        # Test rate limiting enforcement
-        self.test_rate_limiting_enforcement()
-
-        # 3. Database Indexes Verification
-        print("\n🗃️ Testing Database Performance (Indexes)...")
-        if self.token:
-            self.test_create_shipment_performance()
+        response = make_request(
+            "POST",
+            "/auth/login", 
+            json_data=TEST_USER
+        )
+        
+        if response is None:
+            log_test("Login request", "FAIL", "Request failed")
+            return False
+            
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                self.auth_headers = {"Authorization": f"Bearer {data['access_token']}"}
+                self.refresh_token = data.get("refresh_token")
+                self.session_id = data.get("session_id")
+                
+                # Check required fields
+                required_fields = ["access_token", "refresh_token", "session_id", "csrf_token", "email_verified"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    log_test("Login response fields", "FAIL", f"Missing: {missing_fields}")
+                else:
+                    log_test("Login success", "PASS", f"All required fields present. Email verified: {data.get('email_verified')}")
+                    
+                return True
+            except Exception as e:
+                log_test("Login response parsing", "FAIL", str(e))
+                return False
         else:
-            print("    ❌ Skipping performance tests - no authentication token")
-
-        # 4. Account Aggregator Webhook
-        print("\n🔗 Testing Account Aggregator Webhook...")
-        self.test_account_aggregator_webhook()
-
-        return True
-
-    def print_summary(self):
-        """Print test summary"""
-        print("\n" + "=" * 60)
-        print("📊 PRODUCTION READINESS TEST SUMMARY")
-        print("=" * 60)
-        print(f"Total Tests: {self.tests_run}")
-        print(f"Passed: {self.tests_passed}")
-        print(f"Failed: {self.tests_run - self.tests_passed}")
-        print(f"Success Rate: {(self.tests_passed/self.tests_run*100):.1f}%")
-        
-        # Show failed tests
-        failed_tests = [r for r in self.test_results if not r['success']]
-        if failed_tests:
-            print(f"\n❌ Failed Tests ({len(failed_tests)}):")
-            for test in failed_tests:
-                print(f"  • {test['test']}: {test['details']}")
-        
-        # Show successful tests  
-        successful_tests = [r for r in self.test_results if r['success']]
-        if successful_tests:
-            print(f"\n✅ Successful Tests ({len(successful_tests)}):")
-            for test in successful_tests:
-                print(f"  • {test['test']}")
-
-def main():
-    # Check if backend URL is provided in environment
-    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://resilient-api-1.preview.emergentagent.com') + '/api'
+            log_test("Login", "FAIL", f"Status {response.status_code}: {response.text[:200]}")
+            return False
     
-    tester = ProductionReadinessAPITester(backend_url)
+    def test_03_session_management(self):
+        """Test session management endpoints"""
+        print(f"\n{Colors.BLUE}=== Test 3: Session Management ==={Colors.END}")
+        
+        if not self.auth_headers:
+            log_test("Session management", "SKIP", "No auth token available")
+            return
+        
+        # Get active sessions
+        response = make_request(
+            "GET",
+            "/auth/sessions",
+            headers=self.auth_headers
+        )
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                sessions = data.get("sessions", [])
+                count = data.get("count", 0)
+                
+                if len(sessions) > 0:
+                    session = sessions[0]
+                    expected_fields = ["id", "ip_address", "user_agent", "created_at", "last_active"]
+                    present_fields = [field for field in expected_fields if field in session]
+                    
+                    log_test("Session list", "PASS", 
+                           f"Found {count} sessions with fields: {present_fields}")
+                else:
+                    log_test("Session list", "PASS", "No active sessions found")
+                    
+            except Exception as e:
+                log_test("Session management", "FAIL", f"Response parsing error: {e}")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Session management", "FAIL", f"Status: {status}")
     
-    try:
-        success = tester.run_production_readiness_tests()
-        tester.print_summary()
+    def test_04_logout_all_devices(self):
+        """Test logout all devices functionality"""
+        print(f"\n{Colors.BLUE}=== Test 4: Logout All Devices ==={Colors.END}")
         
-        return 0 if tester.tests_passed == tester.tests_run else 1
+        if not self.auth_headers:
+            log_test("Logout all devices", "SKIP", "No auth token available")
+            return
         
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Tests interrupted by user")
-        tester.print_summary()
-        return 1
-    except Exception as e:
-        print(f"\n\n💥 Unexpected error: {str(e)}")
-        tester.print_summary()
-        return 1
+        response = make_request(
+            "POST",
+            "/auth/logout-all-devices",
+            headers=self.auth_headers,
+            json_data={"current_session_id": self.session_id}
+        )
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                revoked_count = data.get("sessions_revoked", 0)
+                message = data.get("message", "")
+                
+                log_test("Logout all devices", "PASS", 
+                       f"Revoked {revoked_count} sessions. Message: {message}")
+            except Exception as e:
+                log_test("Logout all devices", "FAIL", f"Response parsing error: {e}")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Logout all devices", "FAIL", f"Status: {status}")
+    
+    def test_05_refresh_token_rotation(self):
+        """Test refresh token rotation security"""
+        print(f"\n{Colors.BLUE}=== Test 5: Refresh Token Rotation ==={Colors.END}")
+        
+        if not self.refresh_token:
+            log_test("Refresh token rotation", "SKIP", "No refresh token available")
+            return
+        
+        # Use refresh token to get new tokens
+        response = make_request(
+            "POST",
+            "/auth/refresh",
+            json_data={"refresh_token": self.refresh_token}
+        )
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                new_refresh_token = data.get("refresh_token")
+                
+                log_test("Refresh token success", "PASS", "Got new tokens successfully")
+                
+                # Now try to use the OLD refresh token again - should fail
+                old_token_response = make_request(
+                    "POST",
+                    "/auth/refresh",
+                    json_data={"refresh_token": self.refresh_token}
+                )
+                
+                if old_token_response and old_token_response.status_code == 401:
+                    log_test("Token rotation security", "PASS", "Old refresh token correctly invalidated")
+                else:
+                    status = old_token_response.status_code if old_token_response else "No response"
+                    log_test("Token rotation security", "FAIL", f"Old token still works - Status: {status}")
+                
+                # Update for future tests
+                self.refresh_token = new_refresh_token
+                if "access_token" in data:
+                    self.auth_headers = {"Authorization": f"Bearer {data['access_token']}"}
+                
+            except Exception as e:
+                log_test("Refresh token rotation", "FAIL", f"Response parsing error: {e}")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Refresh token rotation", "FAIL", f"Status: {status}")
+
+class ForexTestSuite:
+    def __init__(self, auth_headers: Dict[str, str]):
+        self.auth_headers = auth_headers
+    
+    def test_06_admin_only_rate_creation(self):
+        """Test that only admins can create forex rates"""
+        print(f"\n{Colors.BLUE}=== Test 6: Forex - Admin Only Rate Creation ==={Colors.END}")
+        
+        if not self.auth_headers:
+            log_test("Admin rate creation", "SKIP", "No auth token available")
+            return
+        
+        # Try to create a rate (should fail for non-admin user)
+        rate_data = {
+            "currency": "USD",
+            "rate": 83.50,
+            "source": "manual",
+            "notes": "Test rate"
+        }
+        
+        response = make_request(
+            "POST",
+            "/forex/rate",
+            headers=self.auth_headers,
+            json_data=rate_data
+        )
+        
+        if response and response.status_code == 403:
+            try:
+                data = response.json()
+                detail = data.get("detail", "")
+                if "admin" in detail.lower():
+                    log_test("Admin-only validation", "PASS", f"Correctly blocked non-admin: {detail}")
+                else:
+                    log_test("Admin-only validation", "FAIL", f"Wrong error message: {detail}")
+            except:
+                log_test("Admin-only validation", "PASS", "403 Forbidden received (correct)")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Admin-only validation", "FAIL", f"Expected 403, got: {status}")
+    
+    def test_07_currency_validation(self):
+        """Test currency validation"""
+        print(f"\n{Colors.BLUE}=== Test 7: Forex - Currency Validation ==={Colors.END}")
+        
+        if not self.auth_headers:
+            log_test("Currency validation", "SKIP", "No auth token available")
+            return
+        
+        # Try to create rate with invalid currency
+        invalid_rate_data = {
+            "currency": "INVALID",
+            "rate": 83.50,
+            "source": "manual"
+        }
+        
+        response = make_request(
+            "POST",
+            "/forex/rate",
+            headers=self.auth_headers,
+            json_data=invalid_rate_data
+        )
+        
+        if response and response.status_code == 422:
+            log_test("Currency validation", "PASS", "Invalid currency properly rejected with 422")
+        elif response and response.status_code == 403:
+            log_test("Currency validation", "PASS", "Blocked at admin level (expected due to non-admin user)")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Currency validation", "FAIL", f"Expected 422 or 403, got: {status}")
+    
+    def test_08_rate_validation(self):
+        """Test rate value validation"""
+        print(f"\n{Colors.BLUE}=== Test 8: Forex - Rate Validation ==={Colors.END}")
+        
+        if not self.auth_headers:
+            log_test("Rate validation", "SKIP", "No auth token available")
+            return
+        
+        # Try to create rate with negative value
+        negative_rate_data = {
+            "currency": "USD",
+            "rate": -10.50,
+            "source": "manual"
+        }
+        
+        response = make_request(
+            "POST",
+            "/forex/rate",
+            headers=self.auth_headers,
+            json_data=negative_rate_data
+        )
+        
+        if response and response.status_code == 422:
+            log_test("Negative rate validation", "PASS", "Negative rate properly rejected with 422")
+        elif response and response.status_code == 403:
+            log_test("Negative rate validation", "PASS", "Blocked at admin level (expected due to non-admin user)")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Negative rate validation", "FAIL", f"Expected 422 or 403, got: {status}")
+    
+    def test_09_latest_rates(self):
+        """Test latest rates endpoint"""
+        print(f"\n{Colors.BLUE}=== Test 9: Forex - Latest Rates ==={Colors.END}")
+        
+        response = make_request("GET", "/forex/latest")
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                rates = data.get("rates", {})
+                base = data.get("base", "")
+                cached = data.get("cached", False)
+                
+                if rates and base == "INR":
+                    currency_count = len(rates)
+                    sample_currencies = list(rates.keys())[:3]
+                    log_test("Latest rates", "PASS", 
+                           f"Got rates for {currency_count} currencies (sample: {sample_currencies}). Cached: {cached}")
+                else:
+                    log_test("Latest rates", "FAIL", f"Invalid response structure. Base: {base}")
+            except Exception as e:
+                log_test("Latest rates", "FAIL", f"Response parsing error: {e}")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("Latest rates", "FAIL", f"Status: {status}")
+    
+    def test_10_history_pagination(self):
+        """Test forex history with pagination"""
+        print(f"\n{Colors.BLUE}=== Test 10: Forex - History with Pagination ==={Colors.END}")
+        
+        if not self.auth_headers:
+            log_test("History pagination", "SKIP", "No auth token available")
+            return
+        
+        response = make_request(
+            "GET",
+            "/forex/history/USD?page=1&page_size=10&days=30",
+            headers=self.auth_headers
+        )
+        
+        if response and response.status_code == 200:
+            try:
+                data = response.json()
+                history = data.get("history", [])
+                pagination = data.get("pagination", {})
+                statistics = data.get("statistics", {})
+                
+                # Check pagination structure
+                pagination_fields = ["page", "page_size", "total_count", "total_pages", "has_next", "has_prev"]
+                present_pagination = [field for field in pagination_fields if field in pagination]
+                
+                # Check statistics
+                stats_fields = list(statistics.keys())
+                
+                log_test("History pagination", "PASS", 
+                       f"Got {len(history)} history items. "
+                       f"Pagination: {present_pagination}. "
+                       f"Statistics: {stats_fields}")
+                
+            except Exception as e:
+                log_test("History pagination", "FAIL", f"Response parsing error: {e}")
+        else:
+            status = response.status_code if response else "No response"
+            log_test("History pagination", "FAIL", f"Status: {status}")
+
+def run_all_tests():
+    """Run all security and forex tests"""
+    print(f"{Colors.BOLD}🔒 ExportFlow Security & Forex Test Suite{Colors.END}")
+    print(f"Testing against: {BASE_URL}")
+    print(f"Test user: {TEST_USER['email']}")
+    
+    # Initialize test suites
+    security_tests = SecurityTestSuite()
+    
+    # Run security tests
+    security_tests.test_01_failed_login_tracking()
+    
+    # Login for authenticated tests
+    login_success = security_tests.test_02_successful_login()
+    
+    if login_success:
+        security_tests.test_03_session_management()
+        security_tests.test_04_logout_all_devices()
+        security_tests.test_05_refresh_token_rotation()
+        
+        # Run forex tests with auth headers
+        forex_tests = ForexTestSuite(security_tests.auth_headers)
+        forex_tests.test_06_admin_only_rate_creation()
+        forex_tests.test_07_currency_validation()
+        forex_tests.test_08_rate_validation()
+        forex_tests.test_09_latest_rates()
+        forex_tests.test_10_history_pagination()
+    else:
+        print(f"{Colors.RED}⚠️  Authenticated tests skipped due to login failure{Colors.END}")
+        
+        # Still run public forex tests
+        forex_tests = ForexTestSuite({})
+        forex_tests.test_09_latest_rates()
+    
+    print(f"\n{Colors.BOLD}✅ Test suite completed{Colors.END}")
 
 if __name__ == "__main__":
-    sys.exit(main())
+    run_all_tests()

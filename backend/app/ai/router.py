@@ -78,7 +78,7 @@ async def get_chat_history(
 
 @router.get("/sessions")
 @limiter.limit("30/minute")
-async def get_sessions(request: Request, user: dict = Depends(get_current_user)):
+async def get_sessions(request: Request, response: Response, user: dict = Depends(get_current_user)):
     """
     Get all chat sessions for the current user.
     

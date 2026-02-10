@@ -72,6 +72,7 @@ async def logout(
     return {"message": "Successfully logged out", "status": "success"}
 
 @router.post("/change-password")
+@limiter.limit("3/hour")
 async def change_password(
     request: Request,
     data: ChangePasswordRequest,
@@ -81,6 +82,7 @@ async def change_password(
     """
     Change password and invalidate all existing tokens.
     User must re-login after password change.
+    Rate limited: 3/hour.
     """
     result = await AuthService.change_password(
         user["id"], 

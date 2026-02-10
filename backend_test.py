@@ -707,7 +707,7 @@ class ForexTestSuite:
             status = response.status_code if response else "No response"
             log_test("Latest rates", "FAIL", f"Status: {status}")
     
-    def test_10_history_pagination(self):
+    def test_18_history_pagination(self):
         """Test forex history with pagination"""
         print(f"\n{Colors.BLUE}=== Test 10: Forex - History with Pagination ==={Colors.END}")
         

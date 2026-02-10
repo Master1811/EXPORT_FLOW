@@ -747,8 +747,8 @@ class ForexTestSuite:
             log_test("History pagination", "FAIL", f"Status: {status}")
 
 def run_all_tests():
-    """Run all security and forex tests"""
-    print(f"{Colors.BOLD}🔒 ExportFlow Security & Forex Test Suite{Colors.END}")
+    """Run all security, AI, and forex tests"""
+    print(f"{Colors.BOLD}🔒 ExportFlow Security, AI & Forex Test Suite{Colors.END}")
     print(f"Testing against: {BASE_URL}")
     print(f"Test user: {TEST_USER['email']}")
     
@@ -766,19 +766,30 @@ def run_all_tests():
         security_tests.test_04_logout_all_devices()
         security_tests.test_05_refresh_token_rotation()
         
+        # Run AI service tests with auth headers
+        ai_tests = AIServiceTestSuite(security_tests.auth_headers)
+        ai_tests.test_06_ai_query_length_min_validation()
+        ai_tests.test_07_ai_query_length_max_validation()
+        ai_tests.test_08_ai_prompt_injection_protection()
+        ai_tests.test_09_ai_valid_query()
+        ai_tests.test_10_ai_usage_stats()
+        ai_tests.test_11_ai_sessions_management()
+        ai_tests.test_12_ai_rate_limiting_headers()
+        ai_tests.test_13_ai_session_isolation_security()
+        
         # Run forex tests with auth headers
         forex_tests = ForexTestSuite(security_tests.auth_headers)
-        forex_tests.test_06_admin_only_rate_creation()
-        forex_tests.test_07_currency_validation()
-        forex_tests.test_08_rate_validation()
-        forex_tests.test_09_latest_rates()
-        forex_tests.test_10_history_pagination()
+        forex_tests.test_14_admin_only_rate_creation()
+        forex_tests.test_15_currency_validation()
+        forex_tests.test_16_rate_validation()
+        forex_tests.test_17_latest_rates()
+        forex_tests.test_18_history_pagination()
     else:
         print(f"{Colors.RED}⚠️  Authenticated tests skipped due to login failure{Colors.END}")
         
         # Still run public forex tests
         forex_tests = ForexTestSuite({})
-        forex_tests.test_09_latest_rates()
+        forex_tests.test_17_latest_rates()
     
     print(f"\n{Colors.BOLD}✅ Test suite completed{Colors.END}")
 

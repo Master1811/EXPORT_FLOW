@@ -533,11 +533,13 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: 
+    - "Refresh Token Rotation"
   stuck_tasks: 
     - "Server-Side Pagination"
+    - "Refresh Token Rotation"
   test_all: false
-  test_priority: "high_first"
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"

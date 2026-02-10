@@ -20,6 +20,21 @@ export const AuthProvider = ({ children }) => {
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken'));
   const [loading, setLoading] = useState(true);
   const refreshTimeoutRef = useRef(null);
+  
+  // Race condition prevention
+  const isRefreshing = useRef(false);
+  const failedQueue = useRef([]);
+
+  const processQueue = useCallback((error, token = null) => {
+    failedQueue.current.forEach(prom => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+    failedQueue.current = [];
+  }, []);
 
   const setAuthTokens = useCallback((accessToken, newRefreshToken = null) => {
     if (accessToken) {
@@ -39,6 +54,36 @@ export const AuthProvider = ({ children }) => {
     setToken(accessToken);
   }, []);
 
+  const performTokenRefresh = useCallback(async (storedRefreshToken) => {
+    // Prevent multiple simultaneous refresh calls
+    if (isRefreshing.current) {
+      return new Promise((resolve, reject) => {
+        failedQueue.current.push({ resolve, reject });
+      });
+    }
+
+    isRefreshing.current = true;
+
+    try {
+      const response = await axios.post(`${API}/auth/refresh`, {
+        refresh_token: storedRefreshToken
+      });
+      
+      const newToken = response.data.access_token;
+      const newRefreshToken = response.data.refresh_token;
+      
+      setAuthTokens(newToken, newRefreshToken);
+      processQueue(null, newToken);
+      
+      return response.data;
+    } catch (error) {
+      processQueue(error, null);
+      throw error;
+    } finally {
+      isRefreshing.current = false;
+    }
+  }, [setAuthTokens, processQueue]);
+
   const scheduleTokenRefresh = useCallback((expiresIn) => {
     // Clear existing timeout
     if (refreshTimeoutRef.current) {
@@ -52,19 +97,16 @@ export const AuthProvider = ({ children }) => {
         try {
           const storedRefreshToken = localStorage.getItem('refreshToken');
           if (storedRefreshToken) {
-            const response = await axios.post(`${API}/auth/refresh`, {
-              refresh_token: storedRefreshToken
-            });
-            setAuthTokens(response.data.access_token, response.data.refresh_token);
-            scheduleTokenRefresh(response.data.expires_in);
+            const data = await performTokenRefresh(storedRefreshToken);
+            scheduleTokenRefresh(data.expires_in);
           }
         } catch (error) {
-          console.error('Token refresh failed:', error);
+          console.error('Scheduled token refresh failed:', error);
           // Don't logout here - let the interceptor handle it
         }
       }, refreshTime);
     }
-  }, [setAuthTokens]);
+  }, [performTokenRefresh]);
 
   const login = async (email, password) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
@@ -95,6 +137,10 @@ export const AuthProvider = ({ children }) => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
+    // Clear any pending queue
+    failedQueue.current = [];
+    isRefreshing.current = false;
+    
     setAuthTokens(null);
     setUser(null);
   };
@@ -117,13 +163,10 @@ export const AuthProvider = ({ children }) => {
           // Try to refresh token
           if (storedRefreshToken) {
             try {
-              const refreshResponse = await axios.post(`${API}/auth/refresh`, {
-                refresh_token: storedRefreshToken
-              });
-              setAuthTokens(refreshResponse.data.access_token, refreshResponse.data.refresh_token);
+              const refreshResponse = await performTokenRefresh(storedRefreshToken);
               const meResponse = await axios.get(`${API}/auth/me`);
               setUser(meResponse.data);
-              scheduleTokenRefresh(refreshResponse.data.expires_in);
+              scheduleTokenRefresh(refreshResponse.expires_in);
             } catch (refreshError) {
               setAuthTokens(null);
             }
@@ -142,7 +185,7 @@ export const AuthProvider = ({ children }) => {
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [setAuthTokens, scheduleTokenRefresh]);
+  }, [setAuthTokens, scheduleTokenRefresh, performTokenRefresh]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, register, logout, loading, isAuthenticated: !!user }}>
@@ -151,10 +194,25 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// API Helper
+// API Helper with enhanced interceptor for race condition handling
 export const api = axios.create({
   baseURL: API,
 });
+
+// Track if we're currently refreshing
+let apiIsRefreshing = false;
+let apiFailedQueue = [];
+
+const processApiQueue = (error, token = null) => {
+  apiFailedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  apiFailedQueue = [];
+};
 
 // Request interceptor
 api.interceptors.request.use((config) => {
@@ -165,7 +223,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for auto-refresh
+// Response interceptor for auto-refresh with race condition protection
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -173,7 +231,21 @@ api.interceptors.response.use(
     
     // If 401 and we have a refresh token and haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Check if we're already refreshing
+      if (apiIsRefreshing) {
+        // Queue this request to retry after refresh completes
+        return new Promise((resolve, reject) => {
+          apiFailedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+      
       originalRequest._retry = true;
+      apiIsRefreshing = true;
       
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
@@ -186,14 +258,21 @@ api.interceptors.response.use(
           localStorage.setItem('token', newToken);
           localStorage.setItem('refreshToken', response.data.refresh_token);
           
+          // Process queued requests
+          processApiQueue(null, newToken);
+          
           // Update header and retry
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         } catch (refreshError) {
-          // Refresh failed - clear tokens
+          // Refresh failed - clear tokens and redirect
+          processApiQueue(refreshError, null);
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
           window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          apiIsRefreshing = false;
         }
       }
     }

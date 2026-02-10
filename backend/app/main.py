@@ -405,13 +405,81 @@ def create_app() -> FastAPI:
     # Webhook endpoints
     @app.post("/api/webhooks/whatsapp")
     async def whatsapp_webhook(data: Dict[str, Any]):
-        logger.info(f"WhatsApp webhook received: {data}")
+        struct_logger.info("WhatsApp webhook received", event_type=data.get("type"))
         return {"status": "received"}
 
     @app.post("/api/webhooks/bank")
     async def bank_webhook(data: Dict[str, Any]):
-        logger.info(f"Bank webhook received: {data}")
+        struct_logger.info("Bank webhook received", event_type=data.get("type"))
         return {"status": "received"}
+
+    @app.post("/api/webhooks/account-aggregator")
+    async def account_aggregator_webhook(data: Dict[str, Any]):
+        """
+        Webhook listener for Account Aggregator (AA) bank consent updates
+        
+        Expected payload:
+        {
+            "event_type": "consent_approved" | "consent_rejected" | "data_ready" | "consent_revoked",
+            "consent_id": "string",
+            "customer_id": "string",
+            "fip_id": "string (Financial Information Provider ID)",
+            "timestamp": "ISO datetime",
+            "data": { ... }
+        }
+        """
+        event_type = data.get("event_type")
+        consent_id = data.get("consent_id")
+        customer_id = data.get("customer_id")
+        
+        struct_logger.info(
+            "Account Aggregator webhook received",
+            event_type=event_type,
+            consent_id=consent_id
+        )
+        
+        # Store webhook event for processing
+        webhook_doc = {
+            "id": generate_id(),
+            "webhook_type": "account_aggregator",
+            "event_type": event_type,
+            "consent_id": consent_id,
+            "customer_id": customer_id,
+            "payload": data,
+            "status": "received",
+            "created_at": now_iso()
+        }
+        await db.webhook_events.insert_one(webhook_doc)
+        
+        # Process based on event type
+        if event_type == "consent_approved":
+            # Update connector status
+            await db.connectors.update_one(
+                {"consent_id": consent_id},
+                {"$set": {"status": "consent_approved", "updated_at": now_iso()}}
+            )
+        elif event_type == "data_ready":
+            # Mark data as ready for fetch
+            await db.connectors.update_one(
+                {"consent_id": consent_id},
+                {"$set": {"status": "data_ready", "data_available": True, "updated_at": now_iso()}}
+            )
+        elif event_type == "consent_rejected":
+            await db.connectors.update_one(
+                {"consent_id": consent_id},
+                {"$set": {"status": "consent_rejected", "updated_at": now_iso()}}
+            )
+        elif event_type == "consent_revoked":
+            await db.connectors.update_one(
+                {"consent_id": consent_id},
+                {"$set": {"status": "consent_revoked", "updated_at": now_iso()}}
+            )
+        
+        return {
+            "status": "received",
+            "event_type": event_type,
+            "processed": True
+        }
 
     return app
 

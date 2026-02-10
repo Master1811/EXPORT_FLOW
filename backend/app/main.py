@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request
 from starlette.middleware.cors import CORSMiddleware
 from typing import Dict, Any, Optional, Tuple
 import logging
@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from .core.config import settings
 from .core.database import db, close_db, ensure_indexes, get_pool_stats
 from .core.dependencies import get_current_user
+from .core.rate_limiting import setup_rate_limiting, limiter, dashboard_limit
+from .core.resilient_client import get_circuit_breaker_status
+from .core.structured_logging import configure_logging, logger as struct_logger
 from .common.utils import generate_id, now_iso
 
 # Import routers

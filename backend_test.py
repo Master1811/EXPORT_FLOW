@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Security and Forex Improvements Test Suite for ExportFlow
-Tests all authentication security features and forex management functionality
+Security, AI Service, and Forex Improvements Test Suite for ExportFlow
+Tests all authentication security features, AI service security improvements, and forex management functionality
 """
 import requests
 import json

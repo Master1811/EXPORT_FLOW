@@ -136,7 +136,7 @@ async def get_cashflow_forecast(request: Request, response: Response, user: dict
 
 @router.get("/incentive-optimizer")
 @limiter.limit("30/minute")
-async def get_incentive_optimizer(request: Request, user: dict = Depends(get_current_user)):
+async def get_incentive_optimizer(request: Request, response: Response, user: dict = Depends(get_current_user)):
     """
     Get recommendations to optimize incentive claims.
     """

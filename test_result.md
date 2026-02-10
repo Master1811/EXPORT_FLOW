@@ -203,15 +203,18 @@ backend:
 
   - task: "Resilient External API Client"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/core/resilient_client.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Created ResilientClient with tenacity exponential backoff, circuit breaker, and asyncio timeouts"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Circuit breaker metrics endpoint returns status for all external services (gst_api, icegate_api, bank_aa_api, gemini_api) with proper state tracking"
 
   - task: "Account Aggregator Webhook"
     implemented: true

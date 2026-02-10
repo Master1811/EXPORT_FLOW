@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Body
+from fastapi import APIRouter, Depends, Request, Body, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from ..core.dependencies import get_current_user, blacklist_token, blacklist_user_tokens
 from ..core.rate_limiting import auth_login_limit, auth_register_limit, limiter

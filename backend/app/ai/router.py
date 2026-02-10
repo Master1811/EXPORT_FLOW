@@ -5,7 +5,7 @@ Secure AI Router with:
 - Usage tracking endpoint
 - Session management
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from ..core.dependencies import get_current_user

@@ -584,7 +584,7 @@ class ForexTestSuite:
     def __init__(self, auth_headers: Dict[str, str]):
         self.auth_headers = auth_headers
     
-    def test_06_admin_only_rate_creation(self):
+    def test_14_admin_only_rate_creation(self):
         """Test that only admins can create forex rates"""
         print(f"\n{Colors.BLUE}=== Test 6: Forex - Admin Only Rate Creation ==={Colors.END}")
         

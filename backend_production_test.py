@@ -26,7 +26,10 @@ class ProductionTester:
     async def setup(self):
         """Initialize session and authenticate"""
         self.session = aiohttp.ClientSession()
-        await self.authenticate()
+        auth_result = await self.authenticate()
+        if not auth_result:
+            await self.cleanup()
+        return auth_result
     
     async def cleanup(self):
         """Clean up resources"""

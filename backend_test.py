@@ -651,7 +651,7 @@ class ForexTestSuite:
             status = response.status_code if response else "No response"
             log_test("Currency validation", "FAIL", f"Expected 422 or 403, got: {status}")
     
-    def test_08_rate_validation(self):
+    def test_16_rate_validation(self):
         """Test rate value validation"""
         print(f"\n{Colors.BLUE}=== Test 8: Forex - Rate Validation ==={Colors.END}")
         

@@ -5,7 +5,7 @@ Secure Forex Router with:
 - Pagination
 - Alert management
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from typing import Optional
 from ..core.dependencies import get_current_user
 from ..core.rate_limiting import limiter

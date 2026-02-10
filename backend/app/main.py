@@ -133,6 +133,12 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Startup event - create indexes
+    @app.on_event("startup")
+    async def startup():
+        await ensure_indexes()
+        logger.info("Application startup complete - indexes ensured")
+
     # Shutdown event
     @app.on_event("shutdown")
     async def shutdown():

@@ -408,7 +408,7 @@ export default function ShipmentsPage() {
   }, [filteredShipments, handleEdit, handleDelete, openEbrcDialog, toggleSensitive, showSensitive]);
 
   // Determine if we should use virtualization (for 50+ items)
-  const useVirtualization = filteredShipments.length > 50;
+  const useVirtualization = filteredShipments.length > 50 && VirtualizedList;
 
   return (
     <div className="space-y-6 animate-fade-in" data-testid="shipments-page">

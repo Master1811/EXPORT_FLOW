@@ -42,17 +42,21 @@ class ProductionTester:
             "password": TEST_PASSWORD
         }
         
-        async with self.session.post(f"{BACKEND_URL}/auth/login", json=login_data) as response:
-            if response.status == 200:
-                data = await response.json()
-                self.access_token = data["access_token"]
-                self.refresh_token = data["refresh_token"]
-                print("✅ Authentication successful")
-                return True
-            else:
-                error = await response.text()
-                print(f"❌ Authentication failed: {response.status} - {error}")
-                return False
+        try:
+            async with self.session.post(f"{BACKEND_URL}/auth/login", json=login_data) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    self.access_token = data["access_token"]
+                    self.refresh_token = data["refresh_token"]
+                    print("✅ Authentication successful")
+                    return True
+                else:
+                    error = await response.text()
+                    print(f"❌ Authentication failed: {response.status} - {error}")
+                    return False
+        except Exception as e:
+            print(f"❌ Authentication error: {str(e)}")
+            return False
     
     def get_headers(self):
         """Get headers with authentication token"""

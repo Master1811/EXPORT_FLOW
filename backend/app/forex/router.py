@@ -58,6 +58,7 @@ async def get_latest_forex(request: Request, response: Response):
 @limiter.limit("60/minute")
 async def get_forex_rate(
     request: Request,
+    response: Response,
     currency: str
 ):
     """

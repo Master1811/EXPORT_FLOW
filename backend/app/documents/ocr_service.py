@@ -321,7 +321,14 @@ Image data (base64, {mime_type}): {image_base64[:100]}... [truncated for display
     
     @staticmethod
     async def process_document(file_id: str, document_type: str, user: dict) -> dict:
-        """Process uploaded document with OCR"""
+        """
+        Process uploaded document with OCR
+        
+        Returns job status with:
+        - completed: Extraction successful, high confidence
+        - review_required: Extraction done but needs human verification
+        - failed: Extraction failed
+        """
         # Get file info
         file_doc = await db.uploaded_files.find_one({
             "id": file_id,
@@ -348,19 +355,34 @@ Image data (base64, {mime_type}): {image_base64[:100]}... [truncated for display
             # Run extraction
             result = await OCRService.extract_with_gemini(file_doc["file_path"], document_type)
             
-            # Update job
+            # Determine final status
+            if result.get("success"):
+                if result.get("needs_review"):
+                    status = "review_required"
+                else:
+                    status = "completed"
+            else:
+                status = "failed"
+            
+            # Update job with full result
             await db.ocr_jobs.update_one(
                 {"id": job_id},
                 {"$set": {
-                    "status": "completed" if result.get("success") else "failed",
+                    "status": status,
                     "result": result,
+                    "confidence": result.get("confidence", 0),
+                    "needs_review": result.get("needs_review", False),
+                    "review_reasons": result.get("review_reasons", []),
                     "completed_at": now_iso()
                 }}
             )
             
             return {
                 "job_id": job_id,
-                "status": "completed" if result.get("success") else "failed",
+                "status": status,
+                "confidence": result.get("confidence", 0),
+                "needs_review": result.get("needs_review", False),
+                "review_reasons": result.get("review_reasons", []),
                 "result": result
             }
         except Exception as e:
@@ -369,13 +391,17 @@ Image data (base64, {mime_type}): {image_base64[:100]}... [truncated for display
                 {"$set": {
                     "status": "failed",
                     "error": str(e),
+                    "needs_review": True,
+                    "review_reasons": [f"Processing error: {str(e)}"],
                     "completed_at": now_iso()
                 }}
             )
             return {
                 "job_id": job_id,
                 "status": "failed",
-                "error": str(e)
+                "error": str(e),
+                "needs_review": True,
+                "review_reasons": [f"Processing error: {str(e)}"]
             }
     
     @staticmethod

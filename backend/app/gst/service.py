@@ -4,6 +4,18 @@ from ..core.database import db
 from ..common.utils import generate_id, now_iso
 from .models import GSTInputCreditCreate, GSTSummaryResponse
 
+
+def get_month_date_range(year: int, month: int) -> tuple:
+    """Get start and end datetime for a specific month (ISO format strings)"""
+    start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+    # Calculate end of month
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc) - timedelta(microseconds=1)
+    else:
+        end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc) - timedelta(microseconds=1)
+    return start_date.isoformat(), end_date.isoformat()
+
+
 class GSTService:
     @staticmethod
     async def add_input_credit(data: GSTInputCreditCreate, user: dict) -> dict:
@@ -25,10 +37,11 @@ class GSTService:
         
         months = []
         for m in range(1, 13):
-            month_str = f"{year}-{m:02d}"
+            # Use indexed range queries instead of regex for performance
+            start_date, end_date = get_month_date_range(year, m)
             shipments = await db.shipments.find({
                 "company_id": company_id,
-                "created_at": {"$regex": f"^{month_str}"}
+                "created_at": {"$gte": start_date, "$lt": end_date}
             }, {"_id": 0}).to_list(500)
             
             total_value = sum(s.get("total_value", 0) for s in shipments)

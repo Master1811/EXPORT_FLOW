@@ -430,6 +430,102 @@ frontend:
         agent: "testing"
         comment: "✅ TESTED: Token race condition handling verified - 5 parallel API requests to /api/shipments all succeeded, no token refresh race conditions detected, concurrent request handling working properly"
 
+  - task: "Failed Login Tracking & Account Lockout"
+    implemented: true
+    working: true
+    file: "backend/app/auth/service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Failed login tracking working perfectly - accounts locked after 5 failed attempts with proper countdown messaging (4,3,2,1 attempts remaining). Account lockout duration set to 15 minutes. 429 status returned on lockout."
+
+  - task: "Session Management & Multi-Device Logout"
+    implemented: true
+    working: true
+    file: "backend/app/auth/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Session management fully functional - GET /api/auth/sessions returns active sessions with IP, user_agent, timestamps. POST /api/auth/logout-all-devices successfully revokes other sessions while keeping current one active."
+
+  - task: "Refresh Token Rotation"
+    implemented: true
+    working: false
+    file: "backend/app/auth/service.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ TESTED: Refresh token endpoint fails with 401 'Invalid or expired refresh token' even with freshly issued tokens. Token structure is correct (sub, email, type, jti, iat, exp) but session validation logic may have issues. Needs investigation."
+
+  - task: "Forex Admin-Only Rate Creation"
+    implemented: true
+    working: true
+    file: "backend/app/forex/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Admin-only restriction working perfectly - admin users can create rates (EUR=92.5 created successfully), non-admin users get 403 Forbidden with message 'Only admins can create/modify forex rates'."
+
+  - task: "Forex Currency & Rate Validation"
+    implemented: true
+    working: true
+    file: "backend/app/forex/models.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Input validation working correctly - invalid currency 'INVALID' returns 422 Validation Error, negative rates (-10.0) return 422 Validation Error. Valid currencies (USD, EUR, GBP, etc.) accepted."
+
+  - task: "Forex Latest Rates with Caching"
+    implemented: true
+    working: true
+    file: "backend/app/forex/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Latest rates endpoint working - returns rates for 21 currencies with base INR, includes caching status, proper JSON structure with buy/sell rates, spread, source, and timestamps."
+
+  - task: "Forex History Pagination"
+    implemented: true
+    working: true
+    file: "backend/app/forex/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: History endpoint with pagination working - returns paginated results with proper pagination metadata (page, page_size, total_count, total_pages, has_next, has_prev), includes statistics (min, max, avg, latest)."
+
+  - task: "Enhanced Authentication Security Features"
+    implemented: true
+    working: true
+    file: "backend/app/auth/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Login returns all required security fields - access_token, refresh_token, session_id, csrf_token, email_verified status. User role properly set (admin for test@moradabad.com). IP tracking and user agent capture working."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"

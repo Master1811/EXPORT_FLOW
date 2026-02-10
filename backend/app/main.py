@@ -136,11 +136,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Startup event - create indexes
+    # Setup rate limiting
+    setup_rate_limiting(app)
+
+    # Startup event - create indexes and configure logging
     @app.on_event("startup")
     async def startup():
+        configure_logging()
         await ensure_indexes()
-        logger.info("Application startup complete - indexes ensured")
+        struct_logger.info("Application startup complete", indexes="ensured", rate_limiting="enabled")
 
     # Shutdown event
     @app.on_event("shutdown")
@@ -167,6 +171,14 @@ def create_app() -> FastAPI:
         return {
             "status": "healthy" if "error" not in pool_stats else "degraded",
             "pool": pool_stats,
+            "timestamp": now_iso()
+        }
+
+    @app.get("/api/metrics/circuit-breakers")
+    async def get_circuit_breakers():
+        """Get circuit breaker status for external services"""
+        return {
+            "circuit_breakers": get_circuit_breaker_status(),
             "timestamp": now_iso()
         }
 

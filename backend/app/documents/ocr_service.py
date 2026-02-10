@@ -240,16 +240,6 @@ class OCRService:
             system_message="You are an expert document analyzer specializing in trade and export documents. Analyze images carefully and extract information with confidence scores. Return only valid JSON."
         ).with_model("gemini", "gemini-2.5-flash-preview-05-20")
         
-        # Create multi-modal message with image data
-        # Format: include base64 image data in the message for vision analysis
-        multimodal_prompt = f"""
-I have attached an image of a {document_type.replace('_', ' ')} document.
-
-Image data (base64, {mime_type}): {image_base64[:100]}... [truncated for display]
-
-{extraction_prompt}
-"""
-        
         # For actual multi-modal, we need to use the proper format
         # Using UserMessage with image data
         user_message = UserMessage(

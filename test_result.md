@@ -158,15 +158,18 @@ backend:
 
   - task: "Rate Limiting (slowapi)"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/core/rate_limiting.py, app/auth/router.py, app/documents/router.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented rate limiting - login: 5/min/IP, OCR: 20/hr/company, register: 3/min/IP"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Rate limiting working - X-RateLimit headers present in responses (Limit=5, Remaining=4, Reset timestamp), login endpoint properly rate limited. Fixed slowapi Response parameter issue."
 
   - task: "IDOR Guard (Security)"
     implemented: true

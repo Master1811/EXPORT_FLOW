@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, Body
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from ..core.dependencies import get_current_user, blacklist_token, blacklist_user_tokens
+from ..core.rate_limiting import auth_login_limit, auth_register_limit, limiter
 from .models import UserCreate, UserLogin, UserResponse, TokenResponse, ChangePasswordRequest
 from .service import AuthService
 
@@ -19,13 +20,15 @@ def get_user_agent(request: Request) -> str:
     return request.headers.get("User-Agent")
 
 @router.post("/register")
-async def register(data: UserCreate, request: Request):
-    """Register a new user. Returns access and refresh tokens."""
+@auth_register_limit
+async def register(request: Request, data: UserCreate):
+    """Register a new user. Returns access and refresh tokens. Rate limited: 3/minute per IP."""
     return await AuthService.register(data, ip_address=get_client_ip(request))
 
 @router.post("/login")
-async def login(data: UserLogin, request: Request):
-    """Login user. Returns access token (15 min) and refresh token (7 days)."""
+@auth_login_limit
+async def login(request: Request, data: UserLogin):
+    """Login user. Returns access token (15 min) and refresh token (7 days). Rate limited: 5/minute per IP."""
     return await AuthService.login(
         data, 
         ip_address=get_client_ip(request),
@@ -33,6 +36,7 @@ async def login(data: UserLogin, request: Request):
     )
 
 @router.post("/refresh")
+@limiter.limit("30/minute")
 async def refresh_token(
     request: Request,
     refresh_token: str = Body(..., embed=True)
@@ -41,6 +45,7 @@ async def refresh_token(
     Use refresh token to get new access token.
     
     Call this when access token expires. Provides new access and refresh tokens.
+    Rate limited: 30/minute.
     """
     return await AuthService.refresh_tokens(
         refresh_token,

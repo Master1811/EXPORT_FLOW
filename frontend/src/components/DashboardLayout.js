@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, api } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
@@ -20,6 +20,66 @@ const navItems = [
   { icon: Users, label: 'Credit', path: '/credit' },
   { icon: Link2, label: 'Connectors', path: '/connectors' },
 ];
+
+// Prefetch map to avoid redundant prefetches
+const prefetchedRoutes = new Set();
+
+// NavLink with prefetch on hover
+const NavLink = React.memo(({ item, isActive, collapsed, onNavigate }) => {
+  const Icon = item.icon;
+  
+  const handleMouseEnter = useCallback(() => {
+    // Prefetch route chunk on hover (only once)
+    if (!prefetchedRoutes.has(item.path)) {
+      prefetchedRoutes.add(item.path);
+      // The dynamic import triggers webpack to load the chunk
+      const routeImports = {
+        '/dashboard': () => import('../pages/DashboardPage'),
+        '/shipments': () => import('../pages/ShipmentsPage'),
+        '/documents': () => import('../pages/DocumentsPage'),
+        '/payments': () => import('../pages/PaymentsPage'),
+        '/forex': () => import('../pages/ForexPage'),
+        '/compliance': () => import('../pages/CompliancePage'),
+        '/incentives': () => import('../pages/IncentivesPage'),
+        '/ai': () => import('../pages/AIPage'),
+        '/credit': () => import('../pages/CreditPage'),
+        '/connectors': () => import('../pages/ConnectorsPage'),
+      };
+      
+      const importFn = routeImports[item.path];
+      if (importFn) {
+        // Use requestIdleCallback for non-blocking prefetch
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(() => importFn().catch(() => {}));
+        } else {
+          setTimeout(() => importFn().catch(() => {}), 100);
+        }
+      }
+    }
+  }, [item.path]);
+
+  return (
+    <Link
+      to={item.path}
+      onClick={onNavigate}
+      onMouseEnter={handleMouseEnter}
+      className={`
+        flex items-center gap-3 px-3 py-2.5 rounded-md
+        transition-colors duration-200
+        ${isActive 
+          ? 'bg-primary/10 text-primary border-l-2 border-primary' 
+          : 'text-muted-foreground hover:bg-surface-highlight hover:text-foreground'
+        }
+      `}
+      data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+    >
+      <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+      {!collapsed && <span className="text-sm">{item.label}</span>}
+    </Link>
+  );
+});
+
+NavLink.displayName = 'NavLink';
 
 export const DashboardLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);

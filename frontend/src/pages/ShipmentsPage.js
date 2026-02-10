@@ -732,14 +732,16 @@ export default function ShipmentsPage() {
                       </TableRow>
                     </TableHeader>
                   </Table>
-                  <List
-                    height={600}
-                    itemCount={filteredShipments.length}
-                    itemSize={80}
-                    width="100%"
-                  >
-                    {VirtualizedRow}
-                  </List>
+                  {VirtualizedList && (
+                    <VirtualizedList
+                      height={600}
+                      itemCount={filteredShipments.length}
+                      itemSize={80}
+                      width="100%"
+                    >
+                      {VirtualizedRow}
+                    </VirtualizedList>
+                  )}
                 </div>
               ) : (
                 // Regular table for smaller datasets

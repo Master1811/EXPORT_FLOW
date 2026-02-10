@@ -154,7 +154,7 @@ async def get_risk_alerts(request: Request, response: Response, user: dict = Dep
 
 @router.get("/usage")
 @limiter.limit("30/minute")
-async def get_usage_stats(request: Request, user: dict = Depends(get_current_user)):
+async def get_usage_stats(request: Request, response: Response, user: dict = Depends(get_current_user)):
     """
     Get AI usage statistics for billing and monitoring.
     

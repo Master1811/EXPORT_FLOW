@@ -39,6 +39,7 @@ async def login(request: Request, response: Response, data: UserLogin):
 @limiter.limit("30/minute")
 async def refresh_token(
     request: Request,
+    response: Response,
     refresh_token: str = Body(..., embed=True)
 ):
     """

@@ -314,7 +314,11 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Code Splitting (React.lazy)"
+    - "Error Boundaries"
+    - "AuthContext Race Condition Fix"
+    - "ShipmentsPage Optimization"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -348,6 +352,16 @@ agent_communication:
       
       SKIPPED (requires special setup):
       • IDOR Guard: Needs multi-company test scenario
+  - agent: "main"
+    message: |
+      Frontend optimizations implemented. Please test:
+      1. Code splitting - verify lazy loading of pages
+      2. Error boundaries - verify error handling doesn't crash app
+      3. ShipmentsPage - verify search debouncing, table rendering
+      4. Login/auth flow - verify token refresh works
+      5. Navigation - verify page transitions work with code splitting
+      
+      Test credentials: test@moradabad.com / Test@123
       • OCR Gemini Vision: Needs image upload and API credentials
       
       ISSUES FIXED DURING TESTING:

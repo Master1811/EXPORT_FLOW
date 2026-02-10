@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 
 from .core.config import settings
-from .core.database import db, close_db
+from .core.database import db, close_db, ensure_indexes, get_pool_stats
 from .core.dependencies import get_current_user
 from .common.utils import generate_id, now_iso
 

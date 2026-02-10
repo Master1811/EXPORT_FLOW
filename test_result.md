@@ -218,15 +218,18 @@ backend:
 
   - task: "Account Aggregator Webhook"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/main.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added /api/webhooks/account-aggregator endpoint for bank consent updates"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Account aggregator webhook accepts POST requests with consent data and returns proper acknowledgment (status: received, processed: true)"
 
   - task: "OCR Multi-modal Gemini Vision"
     implemented: true

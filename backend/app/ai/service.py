@@ -555,7 +555,12 @@ class AIService:
             return {
                 "query": query,
                 "response": "I apologize, but I'm temporarily unable to process your request. Please try again in a moment.",
+                "session_id": session_id if session_id else f"chat-{user_id}-error",
                 "timestamp": now_iso(),
+                "rate_limit": {
+                    "remaining_hourly": None,
+                    "remaining_daily": None
+                },
                 "error": True
             }
 

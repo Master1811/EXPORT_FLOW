@@ -102,7 +102,7 @@ async def delete_session(session_id: str, user: dict = Depends(get_current_user)
 
 @router.get("/analyze-shipment/{shipment_id}")
 @ai_chat_limit
-async def analyze_shipment(request: Request, shipment_id: str, user: dict = Depends(get_current_user)):
+async def analyze_shipment(request: Request, response: Response, shipment_id: str, user: dict = Depends(get_current_user)):
     """
     Get AI analysis of a specific shipment.
     

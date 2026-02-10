@@ -28,6 +28,34 @@ async def get_shipments(
 ):
     return await ShipmentService.get_all(user, status, skip, limit)
 
+@router.get("/paginated")
+async def get_shipments_paginated(
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort_by: str = Query("created_at", enum=["created_at", "total_value", "shipment_number"]),
+    sort_order: str = Query("desc", enum=["asc", "desc"]),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get shipments with server-side pagination, search, and sorting.
+    
+    Optimized for high-volume data (10K+ records):
+    - Server-side filtering and pagination
+    - Indexed search queries
+    - Returns total count for pagination UI
+    """
+    return await ShipmentService.get_paginated(
+        user=user,
+        status=status,
+        search=search,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
 @router.get("/ebrc-dashboard")
 async def get_ebrc_dashboard(user: dict = Depends(get_current_user)):
     """Get e-BRC monitoring dashboard with alerts"""

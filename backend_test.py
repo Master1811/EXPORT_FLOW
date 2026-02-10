@@ -2,8 +2,9 @@ import requests
 import sys
 import json
 from datetime import datetime
+import os
 
-class ExporterFinanceAPITester:
+class ProductionReadinessAPITester:
     def __init__(self, base_url="https://resilient-api-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
@@ -30,7 +31,7 @@ class ExporterFinanceAPITester:
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
         """Run a single API test"""
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/{endpoint}" if endpoint != self.base_url else self.base_url
         test_headers = {'Content-Type': 'application/json'}
         
         if self.token:
@@ -41,16 +42,21 @@ class ExporterFinanceAPITester:
 
         try:
             if method == 'GET':
-                response = requests.get(url, headers=test_headers)
+                response = requests.get(url, headers=test_headers, timeout=10)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers)
+                response = requests.post(url, json=data, headers=test_headers, timeout=10)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=test_headers)
+                response = requests.put(url, json=data, headers=test_headers, timeout=10)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=test_headers)
+                response = requests.delete(url, headers=test_headers, timeout=10)
 
             success = response.status_code == expected_status
             details = f"Status: {response.status_code}"
+            
+            # Check for rate limiting headers in response
+            if 'X-RateLimit' in str(response.headers):
+                rate_limit_info = {k: v for k, v in response.headers.items() if 'ratelimit' in k.lower()}
+                details += f", Rate Limit Headers: {rate_limit_info}"
             
             if not success:
                 details += f", Expected: {expected_status}"
@@ -58,7 +64,7 @@ class ExporterFinanceAPITester:
                     error_data = response.json()
                     details += f", Error: {error_data.get('detail', 'Unknown error')}"
                 except:
-                    details += f", Response: {response.text[:100]}"
+                    details += f", Response: {response.text[:200]}"
 
             self.log_test(name, success, details)
             
@@ -66,245 +72,171 @@ class ExporterFinanceAPITester:
                 try:
                     return response.json()
                 except:
-                    return {}
+                    return {"status": "success", "raw_response": response.text}
             return None
 
         except Exception as e:
             self.log_test(name, False, f"Exception: {str(e)}")
             return None
 
-    def test_health_check(self):
-        """Test health endpoint"""
-        return self.run_test("Health Check", "GET", "health", 200)
-
-    def test_register(self):
-        """Test user registration"""
-        test_user_data = {
-            "email": "test@exportflow.com",
-            "password": "test123",
-            "full_name": "Test User",
-            "company_name": "Test Export Company"
-        }
-        
-        response = self.run_test("User Registration", "POST", "auth/register", 200, test_user_data)
-        if response:
-            self.token = response.get('access_token')
-            self.user_id = response.get('user', {}).get('id')
-            self.company_id = response.get('user', {}).get('company_id')
+    def test_health_endpoint(self):
+        """Test GET /api/health - Should return healthy status"""
+        result = self.run_test("Health Endpoint", "GET", "health", 200)
+        if result and result.get("status") == "healthy":
             return True
         return False
 
-    def test_login(self):
-        """Test user login"""
+    def test_metrics_endpoint(self):
+        """Test GET /api/metrics - Should return uptime metrics"""
+        result = self.run_test("Metrics Endpoint", "GET", "metrics", 200)
+        if result and "uptime" in result:
+            return True
+        return False
+
+    def test_database_metrics(self):
+        """Test GET /api/metrics/database - Should return connection pool stats"""
+        result = self.run_test("Database Metrics", "GET", "metrics/database", 200)
+        if result and "pool" in result:
+            return True
+        return False
+
+    def test_circuit_breaker_metrics(self):
+        """Test GET /api/metrics/circuit-breakers - Should return circuit breaker status"""
+        result = self.run_test("Circuit Breaker Metrics", "GET", "metrics/circuit-breakers", 200)
+        if result and "circuit_breakers" in result:
+            return True
+        return False
+
+    def test_login_with_rate_limiting(self):
+        """Test POST /api/auth/login - Test login works and verify rate limit headers"""
         login_data = {
-            "email": "test@exportflow.com",
-            "password": "test123"
+            "email": "test@moradabad.com",
+            "password": "Test@123"
         }
         
-        response = self.run_test("User Login", "POST", "auth/login", 200, login_data)
-        if response:
-            self.token = response.get('access_token')
-            self.user_id = response.get('user', {}).get('id')
-            self.company_id = response.get('user', {}).get('company_id')
+        result = self.run_test("Login with Rate Limiting", "POST", "auth/login", 200, login_data)
+        if result:
+            self.token = result.get('access_token')
+            self.user_id = result.get('user', {}).get('id')
+            self.company_id = result.get('user', {}).get('company_id')
             return True
         return False
 
-    def test_auth_me(self):
-        """Test get current user"""
-        return self.run_test("Get Current User", "GET", "auth/me", 200)
-
-    def test_dashboard_stats(self):
-        """Test dashboard stats"""
-        return self.run_test("Dashboard Stats", "GET", "dashboard/stats", 200)
-
-    def test_export_trend(self):
-        """Test export trend chart data"""
-        return self.run_test("Export Trend Chart", "GET", "dashboard/charts/export-trend", 200)
-
-    def test_payment_status_chart(self):
-        """Test payment status chart data"""
-        return self.run_test("Payment Status Chart", "GET", "dashboard/charts/payment-status", 200)
-
-    def test_create_shipment(self):
-        """Test shipment creation"""
+    def test_create_shipment_performance(self):
+        """Test creating a shipment to verify database indexes performance"""
         shipment_data = {
-            "shipment_number": f"SH-TEST-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            "buyer_name": "Test Buyer Corp",
+            "shipment_number": f"SH-PERF-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "buyer_name": "Performance Test Buyer Corp",
             "buyer_country": "USA",
             "destination_port": "USLAX (Los Angeles)",
             "origin_port": "INNSA (Nhava Sheva)",
             "incoterm": "FOB",
             "currency": "USD",
-            "total_value": 50000.0,
+            "total_value": 75000.0,
             "status": "draft",
-            "product_description": "Test electronic components",
+            "product_description": "Performance test electronic components",
             "hs_codes": ["8471", "8542"]
         }
         
-        response = self.run_test("Create Shipment", "POST", "shipments", 200, shipment_data)
-        if response:
-            self.test_shipment_id = response.get('id')
-            return response
-        return None
+        import time
+        start_time = time.time()
+        result = self.run_test("Create Shipment (Performance)", "POST", "shipments", 200, shipment_data)
+        end_time = time.time()
+        
+        response_time = end_time - start_time
+        print(f"    Response time: {response_time:.3f}s")
+        
+        if result and response_time < 2.0:  # Should be fast with indexes
+            self.test_shipment_id = result.get('id')
+            return True
+        return False
 
-    def test_get_shipments(self):
-        """Test get shipments list"""
-        return self.run_test("Get Shipments List", "GET", "shipments", 200)
-
-    def test_get_shipment_by_id(self, shipment_id):
-        """Test get single shipment"""
-        return self.run_test("Get Shipment by ID", "GET", f"shipments/{shipment_id}", 200)
-
-    def test_update_shipment(self, shipment_id):
-        """Test shipment update"""
-        update_data = {
-            "status": "confirmed",
-            "total_value": 55000.0
+    def test_account_aggregator_webhook(self):
+        """Test POST /api/webhooks/account-aggregator with sample payload"""
+        webhook_payload = {
+            "event_type": "consent_approved",
+            "consent_id": "test-consent-123",
+            "customer_id": "cust-456",
+            "fip_id": "hdfc-bank",
+            "timestamp": datetime.now().isoformat() + "Z",
+            "data": {
+                "consent_details": "Sample consent data"
+            }
         }
-        return self.run_test("Update Shipment", "PUT", f"shipments/{shipment_id}", 200, update_data)
+        
+        result = self.run_test("Account Aggregator Webhook", "POST", "webhooks/account-aggregator", 200, webhook_payload)
+        if result and result.get("status") == "received" and result.get("processed"):
+            return True
+        return False
 
-    def test_create_payment(self, shipment_id):
-        """Test payment creation"""
-        payment_data = {
-            "shipment_id": shipment_id,
-            "amount": 25000.0,
-            "currency": "USD",
-            "payment_date": datetime.now().isoformat(),
-            "payment_mode": "wire_transfer",
-            "bank_reference": "TXN123456789"
+    def test_rate_limiting_enforcement(self):
+        """Test rate limiting by making multiple rapid requests"""
+        print("\n🔄 Testing Rate Limiting Enforcement...")
+        
+        # Make 6 rapid login attempts (limit is 5/minute)
+        login_data = {
+            "email": "invalid@test.com",
+            "password": "wrongpassword"
         }
-        return self.run_test("Create Payment", "POST", "payments", 200, payment_data)
+        
+        rate_limited = False
+        for i in range(6):
+            response = requests.post(
+                f"{self.base_url}/auth/login",
+                json=login_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            if response.status_code == 429:  # Too Many Requests
+                rate_limited = True
+                print(f"    ✅ Rate limit triggered after {i+1} attempts")
+                break
+        
+        success = rate_limited
+        self.log_test("Rate Limiting Enforcement", success, 
+                     "Rate limiting triggered" if success else "Rate limiting not enforced")
+        return success
 
-    def test_get_receivables(self):
-        """Test get receivables"""
-        return self.run_test("Get Receivables", "GET", "receivables", 200)
-
-    def test_forex_rates(self):
-        """Test forex rates"""
-        return self.run_test("Get Forex Rates", "GET", "forex/latest", 200)
-
-    def test_gst_summary(self):
-        """Test GST summary"""
-        return self.run_test("GST Monthly Summary", "GET", "gst/summary/monthly", 200)
-
-    def test_lut_status(self):
-        """Test LUT status"""
-        return self.run_test("LUT Status", "GET", "compliance/lut-status", 200)
-
-    def test_rodtep_eligibility(self):
-        """Test RoDTEP eligibility check"""
-        return self.run_test("RoDTEP Eligibility", "GET", "incentives/rodtep-eligibility?hs_code=8471", 200)
-
-    def test_calculate_incentive(self, shipment_id):
-        """Test incentive calculation"""
-        incentive_data = {
-            "shipment_id": shipment_id,
-            "hs_codes": ["8471"],
-            "fob_value": 50000.0,
-            "currency": "USD"
-        }
-        return self.run_test("Calculate Incentive", "POST", "incentives/calculate", 200, incentive_data)
-
-    def test_ai_query(self):
-        """Test AI assistant query"""
-        query_data = {
-            "query": "What are the current RoDTEP rates for electronics exports?",
-            "context": "export incentives"
-        }
-        return self.run_test("AI Query", "POST", "ai/query", 200, query_data)
-
-    def test_company_score(self):
-        """Test company credit score"""
-        return self.run_test("Company Credit Score", "GET", "credit/company-score", 200)
-
-    def test_connector_status(self):
-        """Test connector status - bank sync"""
-        return self.run_test("Bank Sync Status", "GET", "sync/bank", 200)
-
-    def test_gst_sync(self):
-        """Test GST sync"""
-        return self.run_test("GST Sync Status", "GET", "sync/gst", 200)
-
-    def test_notifications(self):
-        """Test notifications"""
-        return self.run_test("Get Notifications", "GET", "notifications/history", 200)
-
-    def run_comprehensive_test(self):
-        """Run all tests in sequence"""
-        print("🚀 Starting Exporter Finance Platform API Tests")
+    def run_production_readiness_tests(self):
+        """Run production readiness specific tests"""
+        print("🚀 Starting Production Readiness API Tests")
         print("=" * 60)
 
-        # Basic health check
-        self.test_health_check()
+        # Test credentials from review request
+        print("📋 Using test credentials: test@moradabad.com / Test@123")
 
-        # Authentication flow
-        print("\n📋 Testing Authentication Flow...")
-        if not self.test_register():
-            # Try login if registration fails (user might already exist)
-            if not self.test_login():
-                print("❌ Authentication failed - stopping tests")
-                return False
+        # 1. Health & Metrics Endpoints
+        print("\n🏥 Testing Health & Metrics Endpoints...")
+        self.test_health_endpoint()
+        self.test_metrics_endpoint()
+        self.test_database_metrics()
+        self.test_circuit_breaker_metrics()
 
-        self.test_auth_me()
-
-        # Dashboard tests
-        print("\n📊 Testing Dashboard...")
-        self.test_dashboard_stats()
-        self.test_export_trend()
-        self.test_payment_status_chart()
-
-        # Shipment management
-        print("\n🚢 Testing Shipment Management...")
-        shipment = self.test_create_shipment()
-        self.test_get_shipments()
+        # 2. Authentication with Rate Limiting
+        print("\n🔐 Testing Authentication with Rate Limiting...")
+        self.test_login_with_rate_limiting()
         
-        if shipment and shipment.get('id'):
-            shipment_id = shipment['id']
-            self.test_get_shipment_by_id(shipment_id)
-            self.test_update_shipment(shipment_id)
-            
-            # Payment tests
-            print("\n💰 Testing Payment Management...")
-            self.test_create_payment(shipment_id)
-            self.test_get_receivables()
-            
-            # Incentive tests
-            print("\n🎯 Testing Incentives...")
-            self.test_rodtep_eligibility()
-            self.test_calculate_incentive(shipment_id)
+        # Test rate limiting enforcement
+        self.test_rate_limiting_enforcement()
 
-        # Forex tests
-        print("\n💱 Testing Forex...")
-        self.test_forex_rates()
+        # 3. Database Indexes Verification
+        print("\n🗃️ Testing Database Performance (Indexes)...")
+        if self.token:
+            self.test_create_shipment_performance()
+        else:
+            print("    ❌ Skipping performance tests - no authentication token")
 
-        # GST & Compliance tests
-        print("\n📋 Testing GST & Compliance...")
-        self.test_gst_summary()
-        self.test_lut_status()
-
-        # AI tests
-        print("\n🤖 Testing AI Assistant...")
-        self.test_ai_query()
-
-        # Credit tests
-        print("\n📈 Testing Credit Intelligence...")
-        self.test_company_score()
-
-        # Connector tests
-        print("\n🔗 Testing Connectors...")
-        self.test_connector_status()
-        self.test_gst_sync()
-
-        # Notification tests
-        print("\n🔔 Testing Notifications...")
-        self.test_notifications()
+        # 4. Account Aggregator Webhook
+        print("\n🔗 Testing Account Aggregator Webhook...")
+        self.test_account_aggregator_webhook()
 
         return True
 
     def print_summary(self):
         """Print test summary"""
         print("\n" + "=" * 60)
-        print("📊 TEST SUMMARY")
+        print("📊 PRODUCTION READINESS TEST SUMMARY")
         print("=" * 60)
         print(f"Total Tests: {self.tests_run}")
         print(f"Passed: {self.tests_passed}")
@@ -317,12 +249,22 @@ class ExporterFinanceAPITester:
             print(f"\n❌ Failed Tests ({len(failed_tests)}):")
             for test in failed_tests:
                 print(f"  • {test['test']}: {test['details']}")
+        
+        # Show successful tests  
+        successful_tests = [r for r in self.test_results if r['success']]
+        if successful_tests:
+            print(f"\n✅ Successful Tests ({len(successful_tests)}):")
+            for test in successful_tests:
+                print(f"  • {test['test']}")
 
 def main():
-    tester = ExporterFinanceAPITester()
+    # Check if backend URL is provided in environment
+    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://resilient-api-1.preview.emergentagent.com') + '/api'
+    
+    tester = ProductionReadinessAPITester(backend_url)
     
     try:
-        success = tester.run_comprehensive_test()
+        success = tester.run_production_readiness_tests()
         tester.print_summary()
         
         return 0 if tester.tests_passed == tester.tests_run else 1

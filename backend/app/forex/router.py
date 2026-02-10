@@ -73,6 +73,7 @@ async def get_forex_rate(
 @limiter.limit("30/minute")  # Rate limit: 30 history queries per minute
 async def get_forex_history(
     request: Request,
+    response: Response,
     currency: str,
     days: int = Query(default=30, ge=1, le=365, description="Number of days of history"),
     page: int = Query(default=1, ge=1, description="Page number"),

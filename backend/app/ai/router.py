@@ -39,7 +39,7 @@ class AIQueryRequest(BaseModel):
 
 @router.post("/query")
 @ai_chat_limit  # Rate limited: 60/hour per company
-async def ai_query(request: Request, data: AIQueryRequest, user: dict = Depends(get_current_user)):
+async def ai_query(request: Request, response: Response, data: AIQueryRequest, user: dict = Depends(get_current_user)):
     """
     Ask the AI assistant any export-related question.
     

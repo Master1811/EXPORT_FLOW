@@ -46,6 +46,7 @@ class GSTService:
             
             total_value = sum(s.get("total_value", 0) for s in shipments)
             igst_paid = total_value * 0.18
+            month_str = f"{year}-{m:02d}"
             
             months.append(GSTSummaryResponse(
                 month=month_str,

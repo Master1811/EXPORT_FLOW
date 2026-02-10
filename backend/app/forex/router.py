@@ -19,6 +19,7 @@ router = APIRouter(prefix="/forex", tags=["Forex"])
 @limiter.limit("10/minute")  # Rate limit: 10 rate creations per minute
 async def create_forex_rate(
     request: Request,
+    response: Response,
     data: ForexRateCreate,
     user: dict = Depends(get_current_user)
 ):

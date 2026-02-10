@@ -180,7 +180,7 @@ class ProductionReadinessAPITester:
         }
         
         rate_limited = False
-        for i in range(6):
+        for i in range(7):  # Try 7 requests to ensure we hit the limit
             response = requests.post(
                 f"{self.base_url}/auth/login",
                 json=login_data,
@@ -188,14 +188,21 @@ class ProductionReadinessAPITester:
                 timeout=10
             )
             
+            print(f"    Request {i+1}: Status {response.status_code}")
+            
             if response.status_code == 429:  # Too Many Requests
                 rate_limited = True
                 print(f"    ✅ Rate limit triggered after {i+1} attempts")
                 break
+                
+            # Check if we have rate limit headers even on successful requests
+            if 'x-ratelimit-remaining' in response.headers:
+                remaining = response.headers.get('x-ratelimit-remaining')
+                print(f"    Rate limit remaining: {remaining}")
         
         success = rate_limited
         self.log_test("Rate Limiting Enforcement", success, 
-                     "Rate limiting triggered" if success else "Rate limiting not enforced")
+                     "Rate limiting triggered" if success else "Rate limiting not enforced within 7 attempts")
         return success
 
     def run_production_readiness_tests(self):

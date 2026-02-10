@@ -40,7 +40,7 @@ async def create_forex_rate(
 
 @router.get("/latest")
 @limiter.limit("60/minute")  # Rate limit: 60 reads per minute
-async def get_latest_forex(request: Request):
+async def get_latest_forex(request: Request, response: Response):
     """
     Get latest forex rates for all currencies.
     

@@ -76,6 +76,7 @@ async def logout(
 @limiter.limit("3/hour")
 async def change_password(
     request: Request,
+    response: Response,
     data: ChangePasswordRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     user: dict = Depends(get_current_user)

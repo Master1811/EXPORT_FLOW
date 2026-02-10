@@ -191,14 +191,27 @@ class AuthService:
     
     @staticmethod
     async def validate_session(user_id: str, refresh_token: str) -> bool:
-        """Validate that a session is still active"""
+        """
+        Validate that a session is still active.
+        Returns True if:
+        - Session exists and is active, OR
+        - Session doesn't exist (backward compatibility for tokens created before session tracking)
+        """
         token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
+        
+        # Check if session exists
         session = await db.user_sessions.find_one({
             "user_id": user_id,
-            "token_hash": token_hash,
-            "is_active": True
+            "token_hash": token_hash
         })
-        return session is not None
+        
+        # If no session found, allow for backward compatibility
+        # (tokens issued before session tracking was implemented)
+        if session is None:
+            return True
+        
+        # If session found, check if it's active
+        return session.get("is_active", False)
     
     @staticmethod
     async def invalidate_refresh_token(refresh_token: str):

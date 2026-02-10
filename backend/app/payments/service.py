@@ -3,7 +3,9 @@ from datetime import datetime, timezone
 from ..core.database import db
 from ..common.utils import generate_id, now_iso
 from .models import PaymentCreate, PaymentResponse
+from ..common.metrics import track_db_operation_sync
 from fastapi import HTTPException
+import time
 
 class PaymentService:
     @staticmethod
@@ -25,17 +27,21 @@ class PaymentService:
             "created_by": user["id"],
             "created_at": now_iso()
         }
+        start = time.time()
         await db.payments.insert_one(payment_doc)
+        track_db_operation_sync("insert", "payments", "success", time.time() - start)
         return PaymentResponse(**{k: v for k, v in payment_doc.items() if k in PaymentResponse.model_fields})
 
     @staticmethod
     async def get_by_shipment(shipment_id: str, user: dict) -> List[PaymentResponse]:
         # IDOR protection
         company_id = user.get("company_id", user["id"])
+        start = time.time()
         payments = await db.payments.find(
             {"shipment_id": shipment_id, "company_id": company_id}, 
             {"_id": 0}
         ).to_list(100)
+        track_db_operation_sync("find", "payments", "success", time.time() - start)
         return [PaymentResponse(**{k: v for k, v in p.items() if k in PaymentResponse.model_fields}) for p in payments]
 
     @staticmethod

@@ -139,6 +139,39 @@ def create_app() -> FastAPI:
     # Setup rate limiting
     setup_rate_limiting(app)
 
+    # Global exception handler for database failures
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+        
+        # Database connection failures
+        if isinstance(exc, (ConnectionFailure, ServerSelectionTimeoutError)):
+            struct_logger.error(
+                "Database connection failure",
+                error=str(exc),
+                path=str(request.url.path)
+            )
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "detail": "Service temporarily unavailable. Database connection failed.",
+                    "error_code": "DB_CONNECTION_FAILED",
+                    "retry_after": 30
+                },
+                headers={"Retry-After": "30"}
+            )
+        
+        # Log unexpected errors
+        struct_logger.error(
+            "Unexpected error",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            path=str(request.url.path)
+        )
+        
+        # Re-raise to let FastAPI handle it
+        raise exc
+
     # Startup event - create indexes and configure logging
     @app.on_event("startup")
     async def startup():
@@ -158,7 +191,22 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     async def health_check():
-        return {"status": "healthy", "timestamp": now_iso()}
+        # Check database connectivity
+        try:
+            await db.command("ping")
+            db_status = "healthy"
+        except Exception:
+            db_status = "unhealthy"
+        
+        overall_status = "healthy" if db_status == "healthy" else "degraded"
+        
+        return {
+            "status": overall_status,
+            "timestamp": now_iso(),
+            "checks": {
+                "database": db_status
+            }
+        }
 
     @app.get("/api/metrics")
     async def get_metrics():

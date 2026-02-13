@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DashboardLayout } from './components/DashboardLayout';
 import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
@@ -292,12 +293,14 @@ function App() {
   return (
     <ErrorBoundary message="The application encountered an unexpected error. Please refresh the page.">
       <div className="App noise-overlay" id="main-content" tabIndex={-1}>
+        <HelmetProvider>
         <BrowserRouter>
           <AuthProvider>
             <AppRoutes />
             <Toaster position="top-right" richColors />
           </AuthProvider>
         </BrowserRouter>
+        </HelmetProvider>
       </div>
     </ErrorBoundary>
   );

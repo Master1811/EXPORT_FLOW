@@ -631,7 +631,7 @@ export default function ShipmentsPage() {
                     <TableHead>Buyer</TableHead>
                     <TableHead>Value</TableHead>
                     <TableHead>e-BRC Status</TableHead>
-                    <TableHead>Days Remaining</TableHead>
+                    <TableHead>Due Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -645,10 +645,8 @@ export default function ShipmentsPage() {
                         <Badge className={EBRC_STATUS_COLORS[s.ebrc_status]}>{s.ebrc_status}</Badge>
                       </TableCell>
                       <TableCell>
-                        {s.days_remaining !== null ? (
-                          <span className={s.days_remaining < 0 ? 'text-destructive' : s.days_remaining < 15 ? 'text-amber' : ''}>
-                            {s.days_remaining < 0 ? `${Math.abs(s.days_remaining)} overdue` : `${s.days_remaining} days`}
-                          </span>
+                        {s.ebrc_due_date ? (
+                          new Date(s.ebrc_due_date).toLocaleDateString()
                         ) : '—'}
                       </TableCell>
                       <TableCell className="text-right">

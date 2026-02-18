@@ -424,14 +424,6 @@ ContactForm.displayName = 'ContactForm';
 // Main Landing Page
 export default function LandingPage() {
   const navigate = useNavigate();
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start']
-  });
-  
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, -100]);
 
   // Handle navigation
   const handleNavigation = (path) => {

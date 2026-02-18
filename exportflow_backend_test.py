@@ -234,8 +234,9 @@ class ExportFlowTestSuite:
             "shipment_id": self.test_shipment_id,
             "currency": "EUR",  # Mismatched currency - should fail
             "amount": 45000.00,
-            "payment_method": "wire_transfer",
-            "reference": "TEST-EUR-MISMATCH"
+            "payment_date": "2024-01-20T00:00:00Z",
+            "payment_mode": "wire_transfer",
+            "bank_reference": "TEST-EUR-MISMATCH"
         }
         
         response = make_request(

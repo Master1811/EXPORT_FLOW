@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import EmptyState from '../components/EmptyState';
 import QuickStartTutorial from '../components/QuickStartTutorial';
+import Disclaimer from '../components/Disclaimer';
 
 const CHART_COLORS = {
   primary: '#8B5CF6',

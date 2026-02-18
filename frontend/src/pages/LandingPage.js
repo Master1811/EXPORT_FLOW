@@ -559,26 +559,15 @@ export default function LandingPage() {
 
         <main id="main-content" role="main">
           <AnimationErrorBoundary>
-            {/* Hero Section */}
-            <section 
-              ref={heroRef} 
-              className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden"
-              aria-labelledby="hero-heading"
-            >
-              {/* Gradient Orbs */}
-              <div className="absolute top-1/4 left-1/4 w-[300px] sm:w-[400px] md:w-[600px] h-[300px] sm:h-[400px] md:h-[600px] bg-violet-600/20 rounded-full blur-orb" aria-hidden="true" />
-              <div className="absolute bottom-1/4 right-1/4 w-[200px] sm:w-[300px] md:w-[400px] h-[200px] sm:h-[300px] md:h-[400px] bg-blue-600/10 rounded-full blur-orb" style={{ animationDelay: '1s' }} aria-hidden="true" />
-              
-              <motion.div 
-                style={{ opacity: heroOpacity, y: heroY }}
-                className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center"
-              >
+            {/* Hero Section with Scroll-Synced Animation */}
+            <ScrollSyncHero>
+              <div className="max-w-5xl mx-auto text-center">
                 {/* Badge */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 mb-8"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 backdrop-blur-sm mb-8"
                   role="status"
                   aria-label="Built for Indian Exporters"
                 >
@@ -637,24 +626,8 @@ export default function LandingPage() {
                 >
                   No credit card required • Free for first 5 shipments
                 </motion.p>
-                
-                {/* Scroll Indicator */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.5 }}
-                  className="absolute bottom-10 left-1/2 -translate-x-1/2"
-                  aria-hidden="true"
-                >
-                  <motion.div
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                  >
-                    <ChevronDown className="w-6 h-6 text-zinc-500" aria-hidden="true" />
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-            </section>
+              </div>
+            </ScrollSyncHero>
 
             {/* Problem Section */}
             <section className="py-20 sm:py-28 px-4 sm:px-6 relative" aria-labelledby="problem-heading">

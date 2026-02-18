@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Test Configuration
-BASE_URL = "https://resilient-api-1.preview.emergentagent.com/api"
+BASE_URL = "https://flow-debug-preview.preview.emergentagent.com/api"
 TEST_USER = {
     "email": "test@moradabad.com",
     "password": "Test@123"

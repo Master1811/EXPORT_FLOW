@@ -7,7 +7,7 @@ import asyncio
 import aiohttp
 import json
 
-BACKEND_URL = "https://resilient-api-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://flow-debug-preview.preview.emergentagent.com/api"
 TEST_EMAIL = "test@moradabad.com"
 TEST_PASSWORD = "Test@123"
 

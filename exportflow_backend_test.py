@@ -188,10 +188,12 @@ class ExportFlowTestSuite:
             "shipment_number": f"TEST-USD-{int(time.time())}",
             "buyer_name": "Test Buyer Corporation",
             "buyer_country": "United States",
+            "destination_port": "New York",
+            "origin_port": "Mumbai",
             "currency": "USD",
             "total_value": 50000.00,
             "status": "in_transit",
-            "export_date": "2024-01-15T00:00:00Z"
+            "expected_ship_date": "2024-01-15T00:00:00Z"
         }
         
         response = make_request(

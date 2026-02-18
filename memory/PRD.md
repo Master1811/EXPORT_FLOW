@@ -152,7 +152,10 @@ Password: Test@123
 - [ ] WhatsApp notifications (requires Twilio)
 - [ ] SMS alerts for new device logins
 - [ ] Migration to Next.js + Spring Boot
+- [ ] Mobile-responsive improvements for smaller screens
+- [ ] Dark/Light theme toggle
+- [ ] Export data to CSV/Excel functionality
 
 ---
 
-*Last Updated: February 7, 2025*
+*Last Updated: February 18, 2025*

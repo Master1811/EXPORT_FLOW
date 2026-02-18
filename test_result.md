@@ -534,14 +534,65 @@ metadata:
 
 test_plan:
   current_focus: 
-    - "Refresh Token Rotation"
+    - "Shipment-Payment Currency Consistency"
+    - "Forex Module Fix"
+    - "Auth Navigation"
+    - "Landing Page Enhancements"
+    - "Legal Disclaimer"
   stuck_tasks: 
     - "Server-Side Pagination"
     - "Refresh Token Rotation"
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: |
+      Implemented ExportFlow Functional & UX Improvements:
+      
+      1. SHIPMENT-PAYMENT CURRENCY CONSISTENCY:
+         - Backend: Added validation in PaymentService.create() to ensure payment currency matches shipment currency
+         - Frontend: Auto-select currency based on selected shipment, currency dropdown locked to shipment currency
+         - Error message: "Payment currency must match shipment currency"
+         
+      2. FOREX MODULE FIX (Root Cause Identified & Fixed):
+         - Issue: Frontend expected rates[currency] to be a number, but backend returns {rate: 83.5, source: "default"...}
+         - Fix: Added getRateValue() helper function to extract rate value from object format
+         - Now properly displays currency rates and converts amounts
+         
+      3. AUTH NAVIGATION IMPROVEMENTS:
+         - Login/Register: ExportFlow logo now navigates to landing page
+         - Added "← Back to Home" link at top of auth forms
+         - Maintained consistent branding
+         
+      4. LANDING PAGE ENHANCEMENTS:
+         - Added About section with Mission, Who We Serve, Our Promise
+         - Added Contact Form with validation (name, email, company, message)
+         - Enhanced Footer with: Quick Links, Legal section, Disclaimer
+         
+      5. LEGAL DISCLAIMER:
+         - Created reusable Disclaimer component (/components/Disclaimer.js)
+         - Added to: Dashboard, Incentives page, Compliance page, Landing page footer
+         - Text: "ExportFlow calculations are based on user-provided and/or government-synced data..."
+      
+      Files Modified:
+      - /backend/app/payments/service.py (currency validation)
+      - /frontend/src/pages/ForexPage.js (rate extraction fix)
+      - /frontend/src/pages/PaymentsPage.js (currency UI lock)
+      - /frontend/src/pages/LoginPage.js (navigation improvements)
+      - /frontend/src/pages/RegisterPage.js (navigation improvements)
+      - /frontend/src/pages/LandingPage.js (About, Contact, Footer)
+      - /frontend/src/pages/DashboardPage.js (disclaimer)
+      - /frontend/src/pages/IncentivesPage.js (disclaimer)
+      - /frontend/src/pages/CompliancePage.js (disclaimer)
+      - /frontend/src/components/Disclaimer.js (new component)
+      
+      Please test:
+      1. Forex page loads and displays rates correctly
+      2. Payment creation enforces shipment currency
+      3. Auth pages have "Back to Home" link and clickable logo
+      4. Landing page shows About section and Contact form
+      5. Dashboard/Incentives/Compliance pages show disclaimer
   - agent: "main"
     message: |
       Implemented Phase 1-4 of backend production-readiness improvements:

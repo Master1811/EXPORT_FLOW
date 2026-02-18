@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,7 +10,7 @@ import {
   TrendingUp, TrendingDown, Package, CreditCard, Calculator,
   AlertTriangle, ArrowUpRight, RefreshCw, Ship, DollarSign,
   FileCheck, Percent, Sparkles, Target, Zap, Clock, ChevronRight,
-  BarChart3, PieChart as PieChartIcon, Activity, Eye, Calendar
+  BarChart3, PieChart as PieChartIcon, Activity, Eye, Calendar, Wallet
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -18,6 +19,7 @@ import {
 import EmptyState from '../components/EmptyState';
 import QuickStartTutorial from '../components/QuickStartTutorial';
 import Disclaimer from '../components/Disclaimer';
+import { SkeletonKPIStrip, SkeletonChart, SkeletonTable, PageTransition } from '../components/Skeleton';
 
 const CHART_COLORS = {
   primary: '#8B5CF6',

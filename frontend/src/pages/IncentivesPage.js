@@ -748,6 +748,9 @@ export default function IncentivesPage() {
           </CardContent>
         </Card>
       )}
+
+        {/* Incentive Calculator Disclaimer */}
+        <Disclaimer variant="footer" />
         </>
       )}
     </div>

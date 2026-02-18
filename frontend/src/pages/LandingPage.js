@@ -708,7 +708,7 @@ export default function LandingPage() {
 
             {/* How It Works Section */}
             <section 
-              className="py-16 sm:py-24 px-4 sm:px-6 relative bg-gradient-to-b from-transparent via-violet-950/10 to-transparent"
+              className="py-20 sm:py-28 px-4 sm:px-6 relative bg-gradient-to-b from-transparent via-violet-950/10 to-transparent"
               aria-labelledby="how-it-works-heading"
             >
               <div className="max-w-6xl mx-auto">
@@ -742,7 +742,7 @@ export default function LandingPage() {
             </section>
 
             {/* Features Section */}
-            <section className="py-16 sm:py-24 px-4 sm:px-6 relative" aria-labelledby="features-heading">
+            <section className="py-20 sm:py-28 px-4 sm:px-6 relative" aria-labelledby="features-heading">
               <div className="max-w-6xl mx-auto">
                 <motion.div
                   initial="hidden"
@@ -796,7 +796,7 @@ export default function LandingPage() {
             </section>
 
             {/* Trust Section */}
-            <section className="py-16 sm:py-24 px-4 sm:px-6 relative" aria-labelledby="trust-heading">
+            <section className="py-20 sm:py-28 px-4 sm:px-6 relative" aria-labelledby="trust-heading">
               <div className="max-w-4xl mx-auto">
                 <motion.div
                   initial="hidden"
@@ -835,7 +835,7 @@ export default function LandingPage() {
 
             {/* Dashboard Preview Section */}
             <section 
-              className="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden"
+              className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden"
               aria-labelledby="dashboard-preview-heading"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-950/5 to-transparent" aria-hidden="true" />
@@ -1107,7 +1107,7 @@ export default function LandingPage() {
             </section>
 
             {/* About Section */}
-            <section className="py-16 sm:py-24 px-4 sm:px-6 relative" id="about" aria-labelledby="about-heading">
+            <section className="py-20 sm:py-28 px-4 sm:px-6 relative" id="about" aria-labelledby="about-heading">
               <div className="max-w-6xl mx-auto">
                 <motion.div
                   initial="hidden"
@@ -1208,7 +1208,7 @@ export default function LandingPage() {
             </section>
 
             {/* Contact Section */}
-            <section className="py-16 sm:py-24 px-4 sm:px-6 relative bg-gradient-to-b from-transparent via-violet-950/10 to-transparent" id="contact" aria-labelledby="contact-heading">
+            <section className="py-20 sm:py-28 px-4 sm:px-6 relative bg-gradient-to-b from-transparent via-violet-950/10 to-transparent" id="contact" aria-labelledby="contact-heading">
               <div className="max-w-4xl mx-auto">
                 <motion.div
                   initial="hidden"

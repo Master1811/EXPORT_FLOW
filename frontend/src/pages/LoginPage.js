@@ -169,14 +169,16 @@ export default function LoginPage() {
             variants={staggerContainer}
           >
             <div>
-              {/* Logo */}
+              {/* Logo - Clickable to landing page */}
               <motion.div variants={fadeInLeft} className="flex items-center gap-3 mb-12">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
-                  <Ship className="w-7 h-7 text-white" strokeWidth={1.5} aria-hidden="true" />
-                </div>
-                <span className="text-3xl font-bold tracking-tight text-white">
-                  Export<span className="text-violet-400">Flow</span>
-                </span>
+                <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded-xl">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
+                    <Ship className="w-7 h-7 text-white" strokeWidth={1.5} aria-hidden="true" />
+                  </div>
+                  <span className="text-3xl font-bold tracking-tight text-white">
+                    Export<span className="text-violet-400">Flow</span>
+                  </span>
+                </Link>
               </motion.div>
               
               {/* Headline */}

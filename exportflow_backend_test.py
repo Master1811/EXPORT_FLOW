@@ -265,6 +265,8 @@ class ExportFlowTestSuite:
         else:
             status = response.status_code if response else "No response"
             text = response.text[:200] if response else "No response"
+            print(f"    Debug - Response status: {status}")
+            print(f"    Debug - Response text: {text}")
             log_test("Currency mismatch validation", "FAIL", 
                    f"Expected 400 Bad Request, got Status: {status}, Response: {text}")
             return False

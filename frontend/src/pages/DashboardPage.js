@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,7 +10,7 @@ import {
   TrendingUp, TrendingDown, Package, CreditCard, Calculator,
   AlertTriangle, ArrowUpRight, RefreshCw, Ship, DollarSign,
   FileCheck, Percent, Sparkles, Target, Zap, Clock, ChevronRight,
-  BarChart3, PieChart as PieChartIcon, Activity, Eye, Calendar
+  BarChart3, PieChart as PieChartIcon, Activity, Eye, Calendar, Wallet
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -18,6 +19,7 @@ import {
 import EmptyState from '../components/EmptyState';
 import QuickStartTutorial from '../components/QuickStartTutorial';
 import Disclaimer from '../components/Disclaimer';
+import { SkeletonKPIStrip, SkeletonChart, SkeletonTable, PageTransition } from '../components/Skeleton';
 
 const CHART_COLORS = {
   primary: '#8B5CF6',
@@ -156,19 +158,39 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <Activity className="w-8 h-8 text-violet-400" />
+      <PageTransition>
+        <div className="space-y-6">
+          {/* Header skeleton */}
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <div className="h-8 w-32 bg-zinc-800 rounded animate-pulse" />
+              <div className="h-4 w-48 bg-zinc-800/50 rounded animate-pulse" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-10 w-28 bg-zinc-800 rounded animate-pulse" />
+              <div className="h-10 w-24 bg-zinc-800 rounded animate-pulse" />
+            </div>
           </div>
-          <p className="text-zinc-400">Loading dashboard...</p>
+          
+          {/* KPI Strip skeleton */}
+          <SkeletonKPIStrip count={4} />
+          
+          {/* Charts skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SkeletonChart height={280} />
+            <SkeletonChart height={280} />
+          </div>
+          
+          {/* Table skeleton */}
+          <SkeletonTable rows={4} cols={5} />
         </div>
-      </div>
+      </PageTransition>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in" data-testid="dashboard-page">
+    <PageTransition>
+      <div className="space-y-8" data-testid="dashboard-page">
       {/* Quick Start Tutorial */}
       <QuickStartTutorial 
         open={showTutorial} 
@@ -184,7 +206,7 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
                 Dashboard
               </h1>
-              <p className="text-zinc-400 mt-1">Overview of your export operations</p>
+              <p className="text-zinc-400 mt-1">Overview of your export finance</p>
             </div>
             <Button 
               onClick={() => setShowTutorial(true)}
@@ -204,7 +226,7 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
                 Dashboard
               </h1>
-              <p className="text-zinc-400 mt-1">Overview of your export operations</p>
+              <p className="text-zinc-400 mt-1">Overview of your export finance</p>
             </div>
             <div className="flex gap-2">
               <Button 
@@ -528,6 +550,7 @@ export default function DashboardPage() {
           <Disclaimer variant="footer" />
         </>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 
 // Premium export/logistics images from Unsplash & Pexels
@@ -38,30 +38,34 @@ const ImageFrame = React.memo(({
   totalFrames,
   isActive,
 }) => {
-  // Calculate when this frame should be visible
-  const frameStart = index / totalFrames;
-  const framePeak = (index + 0.5) / totalFrames;
-  const frameEnd = (index + 1) / totalFrames;
+  // Calculate when this frame should be visible - first image starts visible
+  const frameStart = index === 0 ? 0 : (index - 0.2) / totalFrames;
+  const framePeak = (index + 0.3) / totalFrames;
+  const frameEnd = (index + 0.8) / totalFrames;
   
-  // Smooth opacity transition
+  // First image should start visible
   const opacity = useTransform(
     scrollProgress,
-    [frameStart, framePeak, frameEnd],
-    [0, 1, index === totalFrames - 1 ? 1 : 0]
+    index === 0 
+      ? [0, 0.15, framePeak] 
+      : [frameStart, (frameStart + framePeak) / 2, framePeak, frameEnd],
+    index === 0 
+      ? [1, 1, 0]
+      : [0, 1, 1, index === totalFrames - 1 ? 1 : 0]
   );
   
   // Parallax zoom effect
   const scale = useTransform(
     scrollProgress,
     [frameStart, framePeak, frameEnd],
-    [1.15, 1, 0.95]
+    [1.1, 1, 0.98]
   );
   
   // Vertical parallax movement
   const y = useTransform(
     scrollProgress,
     [frameStart, framePeak, frameEnd],
-    [50, 0, -30]
+    [30, 0, -20]
   );
 
   const springConfig = { stiffness: 100, damping: 30 };
@@ -88,8 +92,8 @@ const ImageFrame = React.memo(({
           decoding="async"
         />
         {/* Premium gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#09090B]/70 via-[#09090B]/50 to-[#09090B]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-900/20 via-transparent to-blue-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#09090B]/60 via-[#09090B]/40 to-[#09090B]/90" />
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-900/10 via-transparent to-blue-900/10" />
       </div>
       
       {/* Frame caption */}
@@ -100,7 +104,7 @@ const ImageFrame = React.memo(({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
-            className="absolute bottom-24 left-8 md:left-16"
+            className="absolute bottom-32 left-8 md:left-16 z-30"
           >
             <span className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm text-zinc-300">
               <span className="w-2 h-2 rounded-full bg-violet-500 mr-2 animate-pulse" />

@@ -1,27 +1,32 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 
-// Export finance themed images (not logistics)
+// Premium export/logistics images - visually striking cargo and port scenes
 const HERO_IMAGES = [
   {
-    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1920',
-    alt: 'Finance dashboard with analytics',
+    url: 'https://images.pexels.com/photos/3076002/pexels-photo-3076002.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    alt: 'Illuminated aerial view of container terminal at night',
     caption: 'Capital Visibility',
   },
   {
-    url: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    alt: 'Financial charts and graphs',
+    url: 'https://images.pexels.com/photos/9806482/pexels-photo-9806482.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    alt: 'Cargo ship transporting containers across ocean',
     caption: 'Receivable Intelligence',
   },
   {
-    url: 'https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    alt: 'Business analytics on screen',
+    url: 'https://images.pexels.com/photos/1624695/pexels-photo-1624695.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    alt: 'Colorful shipping containers stacked at port',
     caption: 'Export Finance Tracking',
   },
   {
-    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920',
-    alt: 'Data visualization dashboard',
+    url: 'https://images.pexels.com/photos/67563/plane-aircraft-jet-airbase-67563.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    alt: 'Cargo plane on tarmac ready for freight',
     caption: 'Smart Finance Analysis',
+  },
+  {
+    url: 'https://images.pexels.com/photos/1427107/pexels-photo-1427107.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    alt: 'Port cranes loading containers at dusk',
+    caption: 'Capital Recovery',
   },
 ];
 

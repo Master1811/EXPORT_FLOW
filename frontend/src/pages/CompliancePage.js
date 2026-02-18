@@ -502,6 +502,9 @@ export default function CompliancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* GST/Compliance Disclaimer */}
+      <Disclaimer variant="footer" />
     </div>
   );
 }

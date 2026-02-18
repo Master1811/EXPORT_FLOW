@@ -91,7 +91,26 @@ export default function PaymentsPage() {
   };
 
   const handleSelectChange = (name, value) => {
+    // When shipment is selected, auto-set currency to match shipment currency
+    if (name === 'shipment_id') {
+      const selectedShipment = shipments.find(s => s.id === value);
+      if (selectedShipment) {
+        setFormData({ 
+          ...formData, 
+          [name]: value, 
+          currency: selectedShipment.currency || 'USD' 
+        });
+        return;
+      }
+    }
     setFormData({ ...formData, [name]: value });
+  };
+
+  // Get the selected shipment's currency for validation
+  const getSelectedShipmentCurrency = () => {
+    if (!formData.shipment_id) return null;
+    const selectedShipment = shipments.find(s => s.id === formData.shipment_id);
+    return selectedShipment?.currency || null;
   };
 
   const handleSubmit = async (e) => {

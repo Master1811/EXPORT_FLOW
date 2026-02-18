@@ -48,7 +48,7 @@ def make_request(method: str, endpoint: str, headers: Optional[Dict] = None,
             url=url,
             headers=headers or {},
             json=json_data,
-            timeout=30
+            timeout=10
         )
         
         print(f"    Response status: {response.status_code}")

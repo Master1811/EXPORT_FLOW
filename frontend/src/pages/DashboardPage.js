@@ -523,6 +523,9 @@ export default function DashboardPage() {
               </CardContent>
             </GlowCard>
           </div>
+
+          {/* Dashboard Footer Disclaimer */}
+          <Disclaimer variant="footer" />
         </>
       )}
     </div>

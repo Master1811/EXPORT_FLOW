@@ -12,6 +12,7 @@ import {
   Target, Mail, Building, MessageSquare, Send, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ScrollSyncHero from '../components/ScrollSyncHero';
 
 // Error Boundary Component
 class AnimationErrorBoundary extends React.Component {

@@ -327,7 +327,7 @@ const ScrollSyncHero = ({
       
       {/* Main content */}
       <motion.div
-        className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-20"
+        className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-16 sm:pt-20"
         style={{
           y: contentY,
           opacity: contentOpacity,
@@ -347,16 +347,16 @@ const ScrollSyncHero = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="text-center max-w-4xl mx-auto"
+            className="text-center max-w-4xl mx-auto px-2"
           >
             {/* Always show industry-specific headline */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6 text-white">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight tracking-tight mb-4 sm:mb-6 text-white">
               {currentContent.headline}
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-zinc-300 max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-300 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed">
               {currentContent.subheadline}
             </p>
-            <p className="text-sm text-zinc-500 mb-8">
+            <p className="text-xs sm:text-sm text-zinc-500 mb-6 sm:mb-8">
               {currentContent.stat} capital tracked by exporters like you
             </p>
             {/* Render children (CTAs) after headline */}

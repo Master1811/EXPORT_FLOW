@@ -164,7 +164,6 @@ ScrollProgressBar.displayName = 'ScrollProgressBar';
 const ScrollSyncHero = ({ children, className = '' }) => {
   const containerRef = useRef(null);
   const [activeFrame, setActiveFrame] = useState(0);
-  const [isLoopEnabled] = useState(true);
   const totalFrames = HERO_IMAGES.length;
   
   // Scroll tracking with offset for smooth parallax
@@ -193,10 +192,10 @@ const ScrollSyncHero = ({ children, className = '' }) => {
     return () => unsubscribe();
   }, [scrollYProgress, totalFrames]);
   
-  // Content animations tied to scroll
-  const contentY = useTransform(smoothProgress, [0, 0.3], [0, -100]);
-  const contentOpacity = useTransform(smoothProgress, [0, 0.25, 0.4], [1, 0.8, 0]);
-  const contentScale = useTransform(smoothProgress, [0, 0.3], [1, 0.95]);
+  // Content animations tied to scroll - start visible
+  const contentY = useTransform(smoothProgress, [0, 0.2], [0, -80]);
+  const contentOpacity = useTransform(smoothProgress, [0, 0.15, 0.25], [1, 1, 0]);
+  const contentScale = useTransform(smoothProgress, [0, 0.2], [1, 0.98]);
   
   // Memoize image frames
   const imageFrames = useMemo(() => (
@@ -216,7 +215,7 @@ const ScrollSyncHero = ({ children, className = '' }) => {
     <section
       ref={containerRef}
       className={`relative ${className}`}
-      style={{ height: `${(totalFrames + 1) * 100}vh` }}
+      style={{ height: `${(totalFrames + 0.5) * 100}vh` }}
       aria-label="Scroll-synced hero animation"
     >
       {/* Sticky container for the hero */}
@@ -233,7 +232,7 @@ const ScrollSyncHero = ({ children, className = '' }) => {
         
         {/* Hero content overlay */}
         <motion.div
-          className="relative z-20 h-full flex items-center justify-center px-4 sm:px-6"
+          className="relative z-20 h-full flex items-center justify-center px-4 sm:px-6 pt-16"
           style={{
             y: contentY,
             opacity: contentOpacity,
@@ -253,8 +252,6 @@ const ScrollSyncHero = ({ children, className = '' }) => {
           <span className="text-xs text-zinc-400 uppercase tracking-wider">Scroll to explore</span>
           <motion.div
             className="w-6 h-10 rounded-full border-2 border-zinc-600 flex items-start justify-center p-1"
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
           >
             <motion.div
               className="w-1.5 h-3 rounded-full bg-violet-500"
@@ -272,7 +269,7 @@ const ScrollSyncHero = ({ children, className = '' }) => {
         
         {/* Noise texture overlay for premium feel */}
         <div 
-          className="absolute inset-0 pointer-events-none z-10 opacity-[0.03]"
+          className="absolute inset-0 pointer-events-none z-10 opacity-[0.02]"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           }}

@@ -184,7 +184,7 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
                 Dashboard
               </h1>
-              <p className="text-zinc-400 mt-1">Overview of your export operations</p>
+              <p className="text-zinc-400 mt-1">Overview of your export finance</p>
             </div>
             <Button 
               onClick={() => setShowTutorial(true)}
@@ -204,7 +204,7 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
                 Dashboard
               </h1>
-              <p className="text-zinc-400 mt-1">Overview of your export operations</p>
+              <p className="text-zinc-400 mt-1">Overview of your export finance</p>
             </div>
             <div className="flex gap-2">
               <Button 

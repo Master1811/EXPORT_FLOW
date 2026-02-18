@@ -3,11 +3,15 @@ import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { 
   Factory, Ship, Landmark, ArrowRight, Shield, Eye, Lock, 
   Database, FileCheck, TrendingUp, Clock, AlertTriangle, 
-  IndianRupee, CheckCircle, Sparkles, ChevronDown
+  IndianRupee, CheckCircle, Sparkles, ChevronDown, Users,
+  Target, Mail, Building, MessageSquare, Send, Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Error Boundary Component
 class AnimationErrorBoundary extends React.Component {

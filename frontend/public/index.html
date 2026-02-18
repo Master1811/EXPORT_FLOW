@@ -169,10 +169,38 @@
             })(document, window.posthog || []);
             posthog.init("phc_xAvL2Iq4tFmANRE7kzbKwaSqp1HJjN7x48s3vr0CMjs", {
                 api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well,
+                person_profiles: "identified_only",
+                capture_performance: false,
+                autocapture: {
+                    capture_copied_text: false,
+                },
                 session_recording: {
                     recordCrossOriginIframes: true,
+                    maskAllInputs: false,
+                    maskInputOptions: {
+                        password: true,
+                    },
                 },
+                disable_session_recording: false,
+            });
+            
+            // Suppress PostHog PerformanceServerTiming errors
+            window.addEventListener('error', function(event) {
+                if (event.message && event.message.includes('PerformanceServerTiming')) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            });
+            
+            window.addEventListener('message', function(event) {
+                try {
+                    // Silently catch any postMessage errors from PostHog
+                } catch (e) {
+                    if (e.name === 'DataCloneError') {
+                        return;
+                    }
+                }
             });
         </script>
     </body>

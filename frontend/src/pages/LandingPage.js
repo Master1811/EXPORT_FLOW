@@ -269,6 +269,157 @@ const SkipLink = () => (
   </a>
 );
 
+// Contact Form Component
+const ContactForm = React.memo(() => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    message: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    if (!formData.message.trim()) newErrors.message = 'Message is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    
+    setSubmitting(true);
+    // Simulate form submission (in production, this would call an API)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setSubmitting(false);
+    setSubmitted(true);
+    toast.success('Thank you! We\'ll get back to you soon.');
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 text-center">
+        <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+          <CheckCircle className="w-8 h-8 text-emerald-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-white mb-2">Message Sent!</h3>
+        <p className="text-zinc-400">Thank you for contacting us. We'll get back to you within 24 hours.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="space-y-2">
+          <Label htmlFor="contact-name" className="text-zinc-200 flex items-center gap-2">
+            <Users className="w-4 h-4 text-zinc-400" />
+            Name <span className="text-red-400">*</span>
+          </Label>
+          <Input
+            id="contact-name"
+            name="name"
+            type="text"
+            placeholder="Your name"
+            value={formData.name}
+            onChange={handleChange}
+            className={`bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500 ${errors.name ? 'border-red-500' : ''}`}
+          />
+          {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="contact-email" className="text-zinc-200 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-zinc-400" />
+            Email <span className="text-red-400">*</span>
+          </Label>
+          <Input
+            id="contact-email"
+            name="email"
+            type="email"
+            placeholder="you@company.com"
+            value={formData.email}
+            onChange={handleChange}
+            className={`bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500 ${errors.email ? 'border-red-500' : ''}`}
+          />
+          {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
+        </div>
+      </div>
+
+      <div className="space-y-2 mb-6">
+        <Label htmlFor="contact-company" className="text-zinc-200 flex items-center gap-2">
+          <Building className="w-4 h-4 text-zinc-400" />
+          Company <span className="text-zinc-500 text-sm font-normal">(Optional)</span>
+        </Label>
+        <Input
+          id="contact-company"
+          name="company"
+          type="text"
+          placeholder="Your company name"
+          value={formData.company}
+          onChange={handleChange}
+          className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500"
+        />
+      </div>
+
+      <div className="space-y-2 mb-6">
+        <Label htmlFor="contact-message" className="text-zinc-200 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-zinc-400" />
+          Message <span className="text-red-400">*</span>
+        </Label>
+        <textarea
+          id="contact-message"
+          name="message"
+          placeholder="How can we help you?"
+          value={formData.message}
+          onChange={handleChange}
+          rows={4}
+          className={`w-full px-3 py-2 rounded-md bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/20 resize-none ${errors.message ? 'border-red-500' : ''}`}
+        />
+        {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={submitting}
+        className="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-white py-6"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Sending...
+          </>
+        ) : (
+          <>
+            <Send className="w-4 h-4 mr-2" />
+            Send Message
+          </>
+        )}
+      </Button>
+    </form>
+  );
+});
+
+ContactForm.displayName = 'ContactForm';
+
 // Main Landing Page
 export default function LandingPage() {
   const navigate = useNavigate();

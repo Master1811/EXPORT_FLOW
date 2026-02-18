@@ -183,7 +183,9 @@ export default function PaymentsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {shipments.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.shipment_number} - {s.buyer_name}</SelectItem>
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.shipment_number} - {s.buyer_name} ({s.currency || 'USD'})
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -194,17 +196,32 @@ export default function PaymentsPage() {
                   <Input name="amount" type="number" value={formData.amount} onChange={handleInputChange} required className="bg-background" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
-                  <Select value={formData.currency} onValueChange={(v) => handleSelectChange('currency', v)}>
-                    <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                  <Label>Currency {getSelectedShipmentCurrency() && <span className="text-xs text-muted-foreground">(locked to shipment)</span>}</Label>
+                  <Select 
+                    value={formData.currency} 
+                    onValueChange={(v) => handleSelectChange('currency', v)}
+                    disabled={!!getSelectedShipmentCurrency()}
+                  >
+                    <SelectTrigger className="bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                      <SelectItem value="AED">AED</SelectItem>
-                      <SelectItem value="INR">INR</SelectItem>
+                      {getSelectedShipmentCurrency() ? (
+                        <SelectItem value={getSelectedShipmentCurrency()}>{getSelectedShipmentCurrency()}</SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                          <SelectItem value="AED">AED</SelectItem>
+                          <SelectItem value="INR">INR</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
+                  {getSelectedShipmentCurrency() && (
+                    <p className="text-xs text-amber">Payment currency must match shipment currency</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

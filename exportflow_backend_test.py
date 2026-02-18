@@ -13,7 +13,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Test Configuration
-BASE_URL = "https://resilient-api-1.preview.emergentagent.com/api"
+BASE_URL = "http://localhost:8001/api"
 TEST_USER = {
     "email": "test@moradabad.com",
     "password": "Test@123"

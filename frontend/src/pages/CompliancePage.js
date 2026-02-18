@@ -19,6 +19,7 @@ import {
   RefreshCw, Plus, Loader2, Receipt, ArrowRight, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Disclaimer from '../components/Disclaimer';
 
 export default function CompliancePage() {
   const [lutStatus, setLutStatus] = useState(null);
@@ -501,6 +502,9 @@ export default function CompliancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* GST/Compliance Disclaimer */}
+      <Disclaimer variant="footer" />
     </div>
   );
 }

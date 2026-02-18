@@ -18,6 +18,14 @@ class PaymentService:
         if not shipment:
             raise HTTPException(status_code=404, detail="Shipment not found")
         
+        # Currency consistency validation: payment currency must match shipment currency
+        shipment_currency = shipment.get("currency", "USD")
+        if data.currency != shipment_currency:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Payment currency ({data.currency}) must match shipment currency ({shipment_currency}). Cross-currency payments require explicit exchange rate conversion."
+            )
+        
         payment_id = generate_id()
         payment_doc = {
             "id": payment_id,

@@ -25,6 +25,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import EmptyState from '../components/EmptyState';
+import Disclaimer from '../components/Disclaimer';
 
 const CHART_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
 
@@ -747,6 +748,9 @@ export default function IncentivesPage() {
           </CardContent>
         </Card>
       )}
+
+        {/* Incentive Calculator Disclaimer */}
+        <Disclaimer variant="footer" />
         </>
       )}
     </div>

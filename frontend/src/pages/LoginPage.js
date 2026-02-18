@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Ship, TrendingUp, Shield, ArrowRight, Loader2, Eye, EyeOff, IndianRupee, BarChart3 } from 'lucide-react';
+import { Ship, TrendingUp, Shield, ArrowRight, Loader2, Eye, EyeOff, IndianRupee, BarChart3, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Animation variants
@@ -169,14 +169,16 @@ export default function LoginPage() {
             variants={staggerContainer}
           >
             <div>
-              {/* Logo */}
+              {/* Logo - Clickable to landing page */}
               <motion.div variants={fadeInLeft} className="flex items-center gap-3 mb-12">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
-                  <Ship className="w-7 h-7 text-white" strokeWidth={1.5} aria-hidden="true" />
-                </div>
-                <span className="text-3xl font-bold tracking-tight text-white">
-                  Export<span className="text-violet-400">Flow</span>
-                </span>
+                <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded-xl">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
+                    <Ship className="w-7 h-7 text-white" strokeWidth={1.5} aria-hidden="true" />
+                  </div>
+                  <span className="text-3xl font-bold tracking-tight text-white">
+                    Export<span className="text-violet-400">Flow</span>
+                  </span>
+                </Link>
               </motion.div>
               
               {/* Headline */}
@@ -235,17 +237,30 @@ export default function LoginPage() {
             animate="visible"
             variants={staggerContainer}
           >
-            {/* Mobile Logo */}
+            {/* Back to Home Link */}
+            <motion.div variants={fadeInUp} className="mb-4">
+              <Link 
+                to="/" 
+                className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Home
+              </Link>
+            </motion.div>
+
+            {/* Mobile Logo - Clickable */}
             <motion.div 
               variants={fadeInUp}
               className="lg:hidden flex items-center gap-3 mb-8 justify-center"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
-                <Ship className="w-6 h-6 text-white" strokeWidth={1.5} aria-hidden="true" />
-              </div>
-              <span className="text-2xl font-bold tracking-tight text-white">
-                Export<span className="text-violet-400">Flow</span>
-              </span>
+              <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
+                  <Ship className="w-6 h-6 text-white" strokeWidth={1.5} aria-hidden="true" />
+                </div>
+                <span className="text-2xl font-bold tracking-tight text-white">
+                  Export<span className="text-violet-400">Flow</span>
+                </span>
+              </Link>
             </motion.div>
 
             {/* Login Card */}

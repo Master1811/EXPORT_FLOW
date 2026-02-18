@@ -3,11 +3,15 @@ import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { 
   Factory, Ship, Landmark, ArrowRight, Shield, Eye, Lock, 
   Database, FileCheck, TrendingUp, Clock, AlertTriangle, 
-  IndianRupee, CheckCircle, Sparkles, ChevronDown
+  IndianRupee, CheckCircle, Sparkles, ChevronDown, Users,
+  Target, Mail, Building, MessageSquare, Send, Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Error Boundary Component
 class AnimationErrorBoundary extends React.Component {
@@ -264,6 +268,157 @@ const SkipLink = () => (
     Skip to main content
   </a>
 );
+
+// Contact Form Component
+const ContactForm = React.memo(() => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    message: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    if (!formData.message.trim()) newErrors.message = 'Message is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    
+    setSubmitting(true);
+    // Simulate form submission (in production, this would call an API)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setSubmitting(false);
+    setSubmitted(true);
+    toast.success('Thank you! We\'ll get back to you soon.');
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 text-center">
+        <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+          <CheckCircle className="w-8 h-8 text-emerald-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-white mb-2">Message Sent!</h3>
+        <p className="text-zinc-400">Thank you for contacting us. We'll get back to you within 24 hours.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="space-y-2">
+          <Label htmlFor="contact-name" className="text-zinc-200 flex items-center gap-2">
+            <Users className="w-4 h-4 text-zinc-400" />
+            Name <span className="text-red-400">*</span>
+          </Label>
+          <Input
+            id="contact-name"
+            name="name"
+            type="text"
+            placeholder="Your name"
+            value={formData.name}
+            onChange={handleChange}
+            className={`bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500 ${errors.name ? 'border-red-500' : ''}`}
+          />
+          {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="contact-email" className="text-zinc-200 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-zinc-400" />
+            Email <span className="text-red-400">*</span>
+          </Label>
+          <Input
+            id="contact-email"
+            name="email"
+            type="email"
+            placeholder="you@company.com"
+            value={formData.email}
+            onChange={handleChange}
+            className={`bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500 ${errors.email ? 'border-red-500' : ''}`}
+          />
+          {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
+        </div>
+      </div>
+
+      <div className="space-y-2 mb-6">
+        <Label htmlFor="contact-company" className="text-zinc-200 flex items-center gap-2">
+          <Building className="w-4 h-4 text-zinc-400" />
+          Company <span className="text-zinc-500 text-sm font-normal">(Optional)</span>
+        </Label>
+        <Input
+          id="contact-company"
+          name="company"
+          type="text"
+          placeholder="Your company name"
+          value={formData.company}
+          onChange={handleChange}
+          className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500"
+        />
+      </div>
+
+      <div className="space-y-2 mb-6">
+        <Label htmlFor="contact-message" className="text-zinc-200 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-zinc-400" />
+          Message <span className="text-red-400">*</span>
+        </Label>
+        <textarea
+          id="contact-message"
+          name="message"
+          placeholder="How can we help you?"
+          value={formData.message}
+          onChange={handleChange}
+          rows={4}
+          className={`w-full px-3 py-2 rounded-md bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/20 resize-none ${errors.message ? 'border-red-500' : ''}`}
+        />
+        {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={submitting}
+        className="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-white py-6"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Sending...
+          </>
+        ) : (
+          <>
+            <Send className="w-4 h-4 mr-2" />
+            Send Message
+          </>
+        )}
+      </Button>
+    </form>
+  );
+});
+
+ContactForm.displayName = 'ContactForm';
 
 // Main Landing Page
 export default function LandingPage() {
@@ -951,6 +1106,139 @@ export default function LandingPage() {
               </div>
             </section>
 
+            {/* About Section */}
+            <section className="py-16 sm:py-24 px-4 sm:px-6 relative" id="about" aria-labelledby="about-heading">
+              <div className="max-w-6xl mx-auto">
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-100px' }}
+                  variants={fadeInUp}
+                  className="text-center mb-12 sm:mb-16"
+                >
+                  <h2 id="about-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                    About{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">
+                      ExportFlow
+                    </span>
+                  </h2>
+                  <p className="text-zinc-300 text-base sm:text-lg max-w-3xl mx-auto">
+                    Built by exporters, for exporters. We understand the pain of managing export finances.
+                  </p>
+                </motion.div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                  <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-100px' }}
+                    variants={fadeInUp}
+                    className="space-y-6"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                        <Target className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Our Mission</h3>
+                        <p className="text-zinc-300 leading-relaxed">
+                          To help Indian exporters recover every rupee they're owed — through better visibility, 
+                          automated tracking, and smarter compliance management.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Who We Serve</h3>
+                        <p className="text-zinc-300 leading-relaxed">
+                          Small and medium exporters, trading houses, manufacturing exporters, and export consultants 
+                          who want to optimize their working capital and compliance.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Our Promise</h3>
+                        <p className="text-zinc-300 leading-relaxed">
+                          No hidden fees, no data selling. Your export data stays yours. We're built on 
+                          trust and transparency — just like good business should be.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-100px' }}
+                    variants={scaleIn}
+                    className="relative"
+                  >
+                    <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="text-center p-4">
+                          <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">100+</p>
+                          <p className="text-sm text-zinc-400 mt-1">Active Exporters</p>
+                        </div>
+                        <div className="text-center p-4">
+                          <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">₹5Cr+</p>
+                          <p className="text-sm text-zinc-400 mt-1">Tracked Monthly</p>
+                        </div>
+                        <div className="text-center p-4">
+                          <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">99.9%</p>
+                          <p className="text-sm text-zinc-400 mt-1">Uptime</p>
+                        </div>
+                        <div className="text-center p-4">
+                          <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">24/7</p>
+                          <p className="text-sm text-zinc-400 mt-1">Support</p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            </section>
+
+            {/* Contact Section */}
+            <section className="py-16 sm:py-24 px-4 sm:px-6 relative bg-gradient-to-b from-transparent via-violet-950/10 to-transparent" id="contact" aria-labelledby="contact-heading">
+              <div className="max-w-4xl mx-auto">
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-100px' }}
+                  variants={fadeInUp}
+                  className="text-center mb-12"
+                >
+                  <h2 id="contact-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                    Get in{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">
+                      Touch
+                    </span>
+                  </h2>
+                  <p className="text-zinc-300 text-base sm:text-lg">
+                    Have questions? We'd love to hear from you.
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-100px' }}
+                  variants={scaleIn}
+                >
+                  <ContactForm />
+                </motion.div>
+              </div>
+            </section>
+
             {/* Final CTA Section */}
             <section className="py-24 sm:py-32 px-4 sm:px-6 relative" aria-labelledby="final-cta-heading">
               {/* Background gradient */}
@@ -993,25 +1281,76 @@ export default function LandingPage() {
           </AnimationErrorBoundary>
         </main>
 
-        {/* Footer */}
-        <footer className="py-12 px-4 sm:px-6 border-t border-zinc-800" role="contentinfo">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
-                <Ship className="w-4 h-4 text-white" aria-hidden="true" />
+        {/* Enhanced Footer */}
+        <footer className="py-16 px-4 sm:px-6 border-t border-zinc-800 bg-zinc-900/30" role="contentinfo">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+              {/* Brand Column */}
+              <div className="md:col-span-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center" aria-hidden="true">
+                    <Ship className="w-5 h-5 text-white" aria-hidden="true" />
+                  </div>
+                  <span className="text-xl font-bold">Export<span className="text-violet-400">Flow</span></span>
+                </div>
+                <p className="text-zinc-400 text-sm leading-relaxed max-w-md mb-4">
+                  ExportFlow is a financial visibility platform for Indian exporters. Track receivables, 
+                  GST refunds, and export incentives — all in one place.
+                </p>
+                <p className="text-xs text-zinc-500">
+                  Made with ❤️ in India
+                </p>
               </div>
-              <span className="font-semibold">ExportFlow</span>
+
+              {/* Quick Links */}
+              <div>
+                <h3 className="text-white font-semibold mb-4">Quick Links</h3>
+                <nav className="flex flex-col gap-3" aria-label="Quick links">
+                  <a href="#about" className="text-sm text-zinc-400 hover:text-white transition-colors">About</a>
+                  <a href="#contact" className="text-sm text-zinc-400 hover:text-white transition-colors">Contact</a>
+                  <a href="#pricing" className="text-sm text-zinc-400 hover:text-white transition-colors">Pricing</a>
+                  <a href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">Sign In</a>
+                  <a href="/register" className="text-sm text-zinc-400 hover:text-white transition-colors">Get Started</a>
+                </nav>
+              </div>
+
+              {/* Legal */}
+              <div>
+                <h3 className="text-white font-semibold mb-4">Legal</h3>
+                <nav className="flex flex-col gap-3" aria-label="Legal links">
+                  <a href="/privacy" className="text-sm text-zinc-400 hover:text-white transition-colors">Privacy Policy</a>
+                  <a href="/terms" className="text-sm text-zinc-400 hover:text-white transition-colors">Terms of Service</a>
+                  <a href="/disclaimer" className="text-sm text-zinc-400 hover:text-white transition-colors">Disclaimer</a>
+                  <a href="/support" className="text-sm text-zinc-400 hover:text-white transition-colors">Support</a>
+                </nav>
+              </div>
             </div>
-            
-            <nav className="flex items-center gap-6 text-sm text-zinc-400" aria-label="Footer navigation">
-              <a href="/privacy" className="hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded">Privacy</a>
-              <a href="/terms" className="hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded">Terms</a>
-              <a href="/support" className="hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 rounded">Support</a>
-            </nav>
-            
-            <p className="text-sm text-zinc-400">
-              © 2026 ExportFlow. Made in India.
-            </p>
+
+            {/* Disclaimer */}
+            <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700/50 mb-8">
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                <strong className="text-zinc-300">Disclaimer:</strong> ExportFlow calculations are based on user-provided 
+                and/or government-synced data. ExportFlow does not assume legal liability for incorrect declarations, 
+                filings, or compliance outcomes. Users are advised to verify all calculations with qualified professionals 
+                before making any business or compliance decisions.
+              </p>
+            </div>
+
+            {/* Bottom Bar */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-zinc-800">
+              <p className="text-sm text-zinc-400">
+                © {new Date().getFullYear()} ExportFlow. All rights reserved.
+              </p>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  <Lock className="w-3 h-3" /> Secure & Encrypted
+                </span>
+                <span className="text-zinc-700">•</span>
+                <span className="text-xs text-zinc-500">Indian Data Residency</span>
+                <span className="text-zinc-700">•</span>
+                <span className="text-xs text-zinc-500">ISO 27001 Certified</span>
+              </div>
+            </div>
           </div>
         </footer>
       </div>

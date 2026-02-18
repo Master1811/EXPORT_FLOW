@@ -78,6 +78,18 @@ if (config.enableVisualEdits && babelMetadataPlugin) {
 }
 
 webpackConfig.devServer = (devServerConfig) => {
+  // Allow external hosts for preview
+  devServerConfig.allowedHosts = 'all';
+  
+  // Add proxy configuration for API calls
+  devServerConfig.proxy = {
+    '/api': {
+      target: 'http://localhost:8001',
+      changeOrigin: true,
+      secure: false,
+    },
+  };
+
   // Apply visual edits dev server setup only if enabled
   if (config.enableVisualEdits && setupDevServer) {
     devServerConfig = setupDevServer(devServerConfig);

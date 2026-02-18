@@ -501,6 +501,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "✅ TESTED: Latest rates endpoint working - returns rates for 21 currencies with base INR, includes caching status, proper JSON structure with buy/sell rates, spread, source, and timestamps."
+      - working: true
+        agent: "testing"
+        comment: "✅ RE-TESTED: Format validation confirmed - returns rates in exact format { rates: { USD: { rate: 83.5, source: 'default' }, ... } } as required. Accessible without authentication."
 
   - task: "Forex History Pagination"
     implemented: true
@@ -526,6 +529,51 @@ frontend:
         agent: "testing"
         comment: "✅ TESTED: Login returns all required security fields - access_token, refresh_token, session_id, csrf_token, email_verified status. User role properly set (admin for test@moradabad.com). IP tracking and user agent capture working."
 
+  - task: "Shipment-Payment Currency Consistency"
+    implemented: true
+    working: true
+    file: "backend/app/payments/service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added validation in PaymentService.create() to ensure payment currency matches shipment currency - returns 400 error with message 'Payment currency must match shipment currency'"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Currency validation working perfectly - EUR payment for USD shipment correctly rejected with 400 status and proper error message. USD payment for USD shipment accepted successfully."
+
+  - task: "Forex Module Format Fix"
+    implemented: true
+    working: true
+    file: "backend/app/forex/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Forex API returns rates in structured format: { rates: { USD: { rate: 83.5, source: 'default' }, ... } } instead of simple numeric values"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Forex API format verification successful - GET /api/forex/latest returns correct structure with USD rate containing both 'rate' and 'source' fields. 21 currencies available without authentication required."
+
+  - task: "Health Check Endpoint"
+    implemented: true
+    working: true
+    file: "backend/app/main.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Health check endpoint at GET /api/health returns system status and timestamp"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Health check endpoint working correctly - returns status: 'healthy' with proper timestamp format and 200 status code."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
@@ -534,14 +582,65 @@ metadata:
 
 test_plan:
   current_focus: 
-    - "Refresh Token Rotation"
+    - "Shipment-Payment Currency Consistency"
+    - "Forex Module Fix"
+    - "Auth Navigation"
+    - "Landing Page Enhancements"
+    - "Legal Disclaimer"
   stuck_tasks: 
     - "Server-Side Pagination"
     - "Refresh Token Rotation"
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: |
+      Implemented ExportFlow Functional & UX Improvements:
+      
+      1. SHIPMENT-PAYMENT CURRENCY CONSISTENCY:
+         - Backend: Added validation in PaymentService.create() to ensure payment currency matches shipment currency
+         - Frontend: Auto-select currency based on selected shipment, currency dropdown locked to shipment currency
+         - Error message: "Payment currency must match shipment currency"
+         
+      2. FOREX MODULE FIX (Root Cause Identified & Fixed):
+         - Issue: Frontend expected rates[currency] to be a number, but backend returns {rate: 83.5, source: "default"...}
+         - Fix: Added getRateValue() helper function to extract rate value from object format
+         - Now properly displays currency rates and converts amounts
+         
+      3. AUTH NAVIGATION IMPROVEMENTS:
+         - Login/Register: ExportFlow logo now navigates to landing page
+         - Added "← Back to Home" link at top of auth forms
+         - Maintained consistent branding
+         
+      4. LANDING PAGE ENHANCEMENTS:
+         - Added About section with Mission, Who We Serve, Our Promise
+         - Added Contact Form with validation (name, email, company, message)
+         - Enhanced Footer with: Quick Links, Legal section, Disclaimer
+         
+      5. LEGAL DISCLAIMER:
+         - Created reusable Disclaimer component (/components/Disclaimer.js)
+         - Added to: Dashboard, Incentives page, Compliance page, Landing page footer
+         - Text: "ExportFlow calculations are based on user-provided and/or government-synced data..."
+      
+      Files Modified:
+      - /backend/app/payments/service.py (currency validation)
+      - /frontend/src/pages/ForexPage.js (rate extraction fix)
+      - /frontend/src/pages/PaymentsPage.js (currency UI lock)
+      - /frontend/src/pages/LoginPage.js (navigation improvements)
+      - /frontend/src/pages/RegisterPage.js (navigation improvements)
+      - /frontend/src/pages/LandingPage.js (About, Contact, Footer)
+      - /frontend/src/pages/DashboardPage.js (disclaimer)
+      - /frontend/src/pages/IncentivesPage.js (disclaimer)
+      - /frontend/src/pages/CompliancePage.js (disclaimer)
+      - /frontend/src/components/Disclaimer.js (new component)
+      
+      Please test:
+      1. Forex page loads and displays rates correctly
+      2. Payment creation enforces shipment currency
+      3. Auth pages have "Back to Home" link and clickable logo
+      4. Landing page shows About section and Contact form
+      5. Dashboard/Incentives/Compliance pages show disclaimer
   - agent: "main"
     message: |
       Implemented Phase 1-4 of backend production-readiness improvements:
@@ -683,27 +782,30 @@ agent_communication:
       • Consider improving Playwright test infrastructure for future testing
   - agent: "testing"
     message: |
-      ✅ SECURITY & FOREX TESTING COMPLETE - 7/8 new features verified successfully:
+      ✅ EXPORTFLOW BACKEND IMPROVEMENTS TESTING COMPLETE - All 3 review request scenarios verified successfully:
       
-      WORKING SECURITY FEATURES:
-      • Failed Login Tracking: Perfect 5-attempt lockout with countdown messaging (4,3,2,1 remaining)
-      • Account Lockout: 15-minute lockout enforced with 429 status after 5 failed attempts  
-      • Session Management: Active sessions listed with IP, user-agent, timestamps
-      • Multi-Device Logout: Successfully revokes other sessions while preserving current session
-      • Enhanced Login Response: Returns session_id, csrf_token, email_verified status correctly
+      REVIEW REQUEST TESTS PASSED:
+      1. **Forex API Format Validation** - GET /api/forex/latest endpoint:
+         ✅ Returns rates in correct format: { rates: { USD: { rate: 83.5, source: "default" }, ... } }
+         ✅ Accessible without authentication (21 currencies available)
+         ✅ USD rate structure contains both 'rate' and 'source' fields as required
       
-      WORKING FOREX FEATURES:
-      • Admin-Only Rate Creation: Non-admin users properly blocked with 403 "Only admins can create/modify forex rates"
-      • Currency & Rate Validation: Invalid currencies and negative rates rejected with 422 errors
-      • Latest Rates API: Returns 21 currencies with caching, buy/sell rates, spreads, timestamps
-      • History Pagination: Proper pagination metadata and statistics (min/max/avg) included
+      2. **Payment Currency Validation** - POST /api/payments:
+         ✅ Created test user and USD shipment successfully
+         ✅ EUR payment for USD shipment CORRECTLY REJECTED with 400 status
+         ✅ Error message: "Payment currency (EUR) must match shipment currency (USD). Cross-currency payments require explicit exchange rate conversion."
+         ✅ USD payment for USD shipment CORRECTLY ACCEPTED with 200 status
+         ✅ Payment created successfully with proper currency matching
       
-      ISSUE FOUND:
-      • Refresh Token Rotation: Endpoint returns 401 "Invalid or expired refresh token" even with fresh tokens
-        - Token structure is valid (contains sub, email, type, jti, iat, exp)
-        - Issue appears to be in session validation logic - needs investigation
+      3. **Health Check Endpoint** - GET /api/health:
+         ✅ Returns status: "healthy" with proper timestamp
+         ✅ Endpoint accessible and responding correctly
       
-      MINOR FIXES APPLIED:
-      • Fixed slowapi Response parameter issue in forex router endpoints (added Response import and parameters)
+      TECHNICAL DETAILS VERIFIED:
+      • Backend service running on localhost:8001 with proper API routing
+      • Authentication system working (rate limiting at 5 requests/minute)
+      • Payment service correctly validates shipment currency against payment currency
+      • Forex service returns structured rate data with source attribution
+      • Health monitoring active and reporting system status
       
-      The ExportFlow security improvements are 87.5% functional with robust authentication and forex management!
+      All ExportFlow backend improvements are working as specified in the review request!

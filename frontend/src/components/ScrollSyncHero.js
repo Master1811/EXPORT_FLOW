@@ -100,7 +100,7 @@ const ScrollProgressBar = React.memo(({ progress }) => {
 
 ScrollProgressBar.displayName = 'ScrollProgressBar';
 
-// Industry toggle component
+// Industry toggle component - mobile optimized
 const IndustryToggle = React.memo(({ activeIndustry, setActiveIndustry }) => {
   const industries = [
     { id: 'brass', label: 'Brass' },
@@ -110,12 +110,12 @@ const IndustryToggle = React.memo(({ activeIndustry, setActiveIndustry }) => {
   ];
 
   return (
-    <div className="flex flex-wrap justify-center gap-2 mb-8">
+    <div className="flex flex-wrap justify-center gap-2 mb-6 sm:mb-8 px-2">
       {industries.map((industry) => (
         <button
           key={industry.id}
           onClick={() => setActiveIndustry(industry.id)}
-          className={`px-4 py-2 text-sm rounded-full transition-all duration-300 ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-full transition-all duration-300 ${
             activeIndustry === industry.id
               ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
               : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 hover:text-zinc-300 border border-zinc-700'

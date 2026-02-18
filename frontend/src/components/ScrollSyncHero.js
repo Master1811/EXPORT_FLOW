@@ -344,21 +344,18 @@ const ScrollSyncHero = ({
             transition={{ duration: 0.4 }}
             className="text-center max-w-4xl mx-auto"
           >
-            {children ? (
-              children
-            ) : (
-              <>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6 text-white">
-                  {currentContent.headline}
-                </h1>
-                <p className="text-base sm:text-lg md:text-xl text-zinc-300 max-w-2xl mx-auto mb-8 leading-relaxed">
-                  {currentContent.subheadline}
-                </p>
-                <p className="text-sm text-zinc-500 mb-8">
-                  {currentContent.stat} capital tracked by exporters like you
-                </p>
-              </>
-            )}
+            {/* Always show industry-specific headline */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6 text-white">
+              {currentContent.headline}
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-zinc-300 max-w-2xl mx-auto mb-8 leading-relaxed">
+              {currentContent.subheadline}
+            </p>
+            <p className="text-sm text-zinc-500 mb-8">
+              {currentContent.stat} capital tracked by exporters like you
+            </p>
+            {/* Render children (CTAs) after headline */}
+            {children}
           </motion.div>
         </AnimatePresence>
       </motion.div>

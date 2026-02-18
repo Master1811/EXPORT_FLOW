@@ -550,6 +550,7 @@ export default function DashboardPage() {
           <Disclaimer variant="footer" />
         </>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

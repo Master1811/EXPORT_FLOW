@@ -734,27 +734,30 @@ agent_communication:
       • Consider improving Playwright test infrastructure for future testing
   - agent: "testing"
     message: |
-      ✅ SECURITY & FOREX TESTING COMPLETE - 7/8 new features verified successfully:
+      ✅ EXPORTFLOW BACKEND IMPROVEMENTS TESTING COMPLETE - All 3 review request scenarios verified successfully:
       
-      WORKING SECURITY FEATURES:
-      • Failed Login Tracking: Perfect 5-attempt lockout with countdown messaging (4,3,2,1 remaining)
-      • Account Lockout: 15-minute lockout enforced with 429 status after 5 failed attempts  
-      • Session Management: Active sessions listed with IP, user-agent, timestamps
-      • Multi-Device Logout: Successfully revokes other sessions while preserving current session
-      • Enhanced Login Response: Returns session_id, csrf_token, email_verified status correctly
+      REVIEW REQUEST TESTS PASSED:
+      1. **Forex API Format Validation** - GET /api/forex/latest endpoint:
+         ✅ Returns rates in correct format: { rates: { USD: { rate: 83.5, source: "default" }, ... } }
+         ✅ Accessible without authentication (21 currencies available)
+         ✅ USD rate structure contains both 'rate' and 'source' fields as required
       
-      WORKING FOREX FEATURES:
-      • Admin-Only Rate Creation: Non-admin users properly blocked with 403 "Only admins can create/modify forex rates"
-      • Currency & Rate Validation: Invalid currencies and negative rates rejected with 422 errors
-      • Latest Rates API: Returns 21 currencies with caching, buy/sell rates, spreads, timestamps
-      • History Pagination: Proper pagination metadata and statistics (min/max/avg) included
+      2. **Payment Currency Validation** - POST /api/payments:
+         ✅ Created test user and USD shipment successfully
+         ✅ EUR payment for USD shipment CORRECTLY REJECTED with 400 status
+         ✅ Error message: "Payment currency (EUR) must match shipment currency (USD). Cross-currency payments require explicit exchange rate conversion."
+         ✅ USD payment for USD shipment CORRECTLY ACCEPTED with 200 status
+         ✅ Payment created successfully with proper currency matching
       
-      ISSUE FOUND:
-      • Refresh Token Rotation: Endpoint returns 401 "Invalid or expired refresh token" even with fresh tokens
-        - Token structure is valid (contains sub, email, type, jti, iat, exp)
-        - Issue appears to be in session validation logic - needs investigation
+      3. **Health Check Endpoint** - GET /api/health:
+         ✅ Returns status: "healthy" with proper timestamp
+         ✅ Endpoint accessible and responding correctly
       
-      MINOR FIXES APPLIED:
-      • Fixed slowapi Response parameter issue in forex router endpoints (added Response import and parameters)
+      TECHNICAL DETAILS VERIFIED:
+      • Backend service running on localhost:8001 with proper API routing
+      • Authentication system working (rate limiting at 5 requests/minute)
+      • Payment service correctly validates shipment currency against payment currency
+      • Forex service returns structured rate data with source attribution
+      • Health monitoring active and reporting system status
       
-      The ExportFlow security improvements are 87.5% functional with robust authentication and forex management!
+      All ExportFlow backend improvements are working as specified in the review request!

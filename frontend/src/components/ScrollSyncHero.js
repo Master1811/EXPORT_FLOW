@@ -193,9 +193,9 @@ const ScrollSyncHero = ({ children, className = '' }) => {
   }, [scrollYProgress, totalFrames]);
   
   // Content animations tied to scroll - start visible
-  const contentY = useTransform(smoothProgress, [0, 0.2], [0, -80]);
-  const contentOpacity = useTransform(smoothProgress, [0, 0.15, 0.25], [1, 1, 0]);
-  const contentScale = useTransform(smoothProgress, [0, 0.2], [1, 0.98]);
+  const contentY = useTransform(smoothProgress, [0, 0.15], [0, -60]);
+  const contentOpacity = useTransform(smoothProgress, [0, 0.1, 0.18], [1, 1, 0]);
+  const contentScale = useTransform(smoothProgress, [0, 0.15], [1, 0.98]);
   
   // Memoize image frames
   const imageFrames = useMemo(() => (
@@ -215,7 +215,7 @@ const ScrollSyncHero = ({ children, className = '' }) => {
     <section
       ref={containerRef}
       className={`relative ${className}`}
-      style={{ height: `${(totalFrames + 0.5) * 100}vh` }}
+      style={{ height: `${(totalFrames * 0.6 + 1) * 100}vh` }}
       aria-label="Scroll-synced hero animation"
     >
       {/* Sticky container for the hero */}

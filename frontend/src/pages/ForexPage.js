@@ -62,19 +62,31 @@ export default function ForexPage() {
     }
   };
 
+  // Helper to get rate value (handles both object and number formats)
+  const getRateValue = (currency) => {
+    const rateData = rates[currency];
+    if (!rateData) return 1;
+    // Handle object format: { rate: 83.5, source: "default", ... }
+    if (typeof rateData === 'object' && rateData.rate !== undefined) {
+      return rateData.rate;
+    }
+    // Handle direct number format
+    return typeof rateData === 'number' ? rateData : 1;
+  };
+
   const handleConvert = () => {
     if (!convertAmount) return;
     const amount = parseFloat(convertAmount);
     let result;
     
     if (convertTo === 'INR') {
-      result = amount * (rates[convertFrom] || 1);
+      result = amount * getRateValue(convertFrom);
     } else if (convertFrom === 'INR') {
-      result = amount / (rates[convertTo] || 1);
+      result = amount / getRateValue(convertTo);
     } else {
       // Cross rate: Convert to INR first, then to target currency
-      const inrAmount = amount * (rates[convertFrom] || 1);
-      result = inrAmount / (rates[convertTo] || 1);
+      const inrAmount = amount * getRateValue(convertFrom);
+      result = inrAmount / getRateValue(convertTo);
     }
     
     setConvertResult(result);

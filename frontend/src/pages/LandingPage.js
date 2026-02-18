@@ -656,14 +656,14 @@ export default function LandingPage() {
             </section>
 
             {/* Problem Section */}
-            <section className="py-16 sm:py-24 px-4 sm:px-6 relative" aria-labelledby="problem-heading">
+            <section className="py-20 sm:py-28 px-4 sm:px-6 relative" aria-labelledby="problem-heading">
               <div className="max-w-6xl mx-auto">
                 <motion.div
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, margin: '-100px' }}
                   variants={fadeInUp}
-                  className="text-center mb-12 sm:mb-16"
+                  className="text-center mb-16"
                 >
                   <h2 id="problem-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                     Where Indian Exporters{' '}
@@ -967,8 +967,8 @@ export default function LandingPage() {
             </section>
 
             {/* Pricing Section */}
-            <section className="py-16 sm:py-24 px-4 sm:px-6 relative" id="pricing" aria-labelledby="pricing-heading">
-              <div className="max-w-5xl mx-auto">
+            <section className="py-20 sm:py-28 px-4 sm:px-6 relative" id="pricing" aria-labelledby="pricing-heading">
+              <div className="max-w-6xl mx-auto">
                 <motion.div
                   initial="hidden"
                   whileInView="visible"

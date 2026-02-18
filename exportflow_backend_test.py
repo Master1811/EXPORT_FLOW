@@ -40,6 +40,9 @@ def make_request(method: str, endpoint: str, headers: Optional[Dict] = None,
     """Make HTTP request with error handling"""
     url = f"{BASE_URL}{endpoint}"
     try:
+        print(f"    Making {method} request to {url}")
+        if json_data:
+            print(f"    Data: {json_data}")
         response = requests.request(
             method=method,
             url=url,
@@ -47,6 +50,9 @@ def make_request(method: str, endpoint: str, headers: Optional[Dict] = None,
             json=json_data,
             timeout=30
         )
+        
+        print(f"    Response status: {response.status_code}")
+        print(f"    Response text: {response.text[:200]}")
         
         if expected_status and response.status_code != expected_status:
             print(f"    {Colors.YELLOW}Expected {expected_status}, got {response.status_code}{Colors.END}")

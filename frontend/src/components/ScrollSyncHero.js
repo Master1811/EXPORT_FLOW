@@ -301,8 +301,8 @@ const ScrollSyncHero = ({
         </AnimatePresence>
       </div>
       
-      {/* Progress dots - right side */}
-      <div className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3">
+      {/* Progress dots - right side - hidden on mobile */}
+      <div className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 z-30 hidden sm:flex flex-col gap-3">
         {HERO_IMAGES.map((_, index) => (
           <button
             key={index}
@@ -317,10 +317,10 @@ const ScrollSyncHero = ({
         ))}
       </div>
       
-      {/* Scroll/Auto toggle */}
+      {/* Scroll/Auto toggle - repositioned for mobile */}
       <button
         onClick={toggleScrollMode}
-        className="absolute bottom-28 right-6 md:right-12 z-30 px-3 py-1.5 text-xs text-zinc-400 bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/50 rounded-full hover:text-white transition-colors"
+        className="absolute bottom-28 right-4 md:right-12 z-30 px-3 py-1.5 text-xs text-zinc-400 bg-zinc-900/60 backdrop-blur-sm border border-zinc-700/50 rounded-full hover:text-white transition-colors hidden sm:block"
       >
         {isScrollMode ? '⏸ Auto' : '↓ Scroll'}
       </button>

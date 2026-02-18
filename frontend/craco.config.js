@@ -78,6 +78,9 @@ if (config.enableVisualEdits && babelMetadataPlugin) {
 }
 
 webpackConfig.devServer = (devServerConfig) => {
+  // Allow external hosts for preview
+  devServerConfig.allowedHosts = 'all';
+  
   // Add proxy configuration for API calls
   devServerConfig.proxy = {
     '/api': {

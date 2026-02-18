@@ -526,6 +526,51 @@ frontend:
         agent: "testing"
         comment: "✅ TESTED: Login returns all required security fields - access_token, refresh_token, session_id, csrf_token, email_verified status. User role properly set (admin for test@moradabad.com). IP tracking and user agent capture working."
 
+  - task: "Shipment-Payment Currency Consistency"
+    implemented: true
+    working: true
+    file: "backend/app/payments/service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added validation in PaymentService.create() to ensure payment currency matches shipment currency - returns 400 error with message 'Payment currency must match shipment currency'"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Currency validation working perfectly - EUR payment for USD shipment correctly rejected with 400 status and proper error message. USD payment for USD shipment accepted successfully."
+
+  - task: "Forex Module Format Fix"
+    implemented: true
+    working: true
+    file: "backend/app/forex/router.py, service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Forex API returns rates in structured format: { rates: { USD: { rate: 83.5, source: 'default' }, ... } } instead of simple numeric values"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Forex API format verification successful - GET /api/forex/latest returns correct structure with USD rate containing both 'rate' and 'source' fields. 21 currencies available without authentication required."
+
+  - task: "Health Check Endpoint"
+    implemented: true
+    working: true
+    file: "backend/app/main.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Health check endpoint at GET /api/health returns system status and timestamp"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Health check endpoint working correctly - returns status: 'healthy' with proper timestamp format and 200 status code."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"

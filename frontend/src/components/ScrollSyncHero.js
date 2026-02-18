@@ -284,8 +284,8 @@ const ScrollSyncHero = ({
         <FloatingParticles />
       </motion.div>
       
-      {/* Image caption badge */}
-      <div className="absolute bottom-28 left-8 md:left-12 z-30">
+      {/* Image caption badge - hidden on small mobile */}
+      <div className="absolute bottom-24 sm:bottom-28 left-4 sm:left-8 md:left-12 z-30 hidden xs:block">
         <AnimatePresence mode="wait">
           <motion.span
             key={currentImageIndex}
@@ -293,9 +293,9 @@ const ScrollSyncHero = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-sm text-zinc-400"
+            className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs sm:text-sm text-zinc-400"
           >
-            <span className="w-2 h-2 rounded-full bg-violet-500 mr-2 animate-pulse" />
+            <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-violet-500 mr-2 animate-pulse" />
             {HERO_IMAGES[currentImageIndex].caption}
           </motion.span>
         </AnimatePresence>

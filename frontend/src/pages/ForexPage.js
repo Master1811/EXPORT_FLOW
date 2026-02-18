@@ -202,7 +202,7 @@ export default function ForexPage() {
           </div>
         ) : (
           CURRENCIES.map(currency => {
-            const rate = rates[currency.code];
+            const rateValue = getRateValue(currency.code);
             const change = getRateChange(currency.code);
             const isUp = change > 0;
             
@@ -220,7 +220,7 @@ export default function ForexPage() {
                       <span className="text-xs ml-1">{change > 0 ? '+' : ''}{change}%</span>
                     </div>
                   </div>
-                  <p className="text-xl font-heading font-bold">₹{rate?.toFixed(2) || 'N/A'}</p>
+                  <p className="text-xl font-heading font-bold">₹{rateValue?.toFixed(2) || 'N/A'}</p>
                   <p className="text-xs text-muted-foreground mt-1">{currency.name}</p>
                 </CardContent>
               </Card>

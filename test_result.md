@@ -501,6 +501,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "✅ TESTED: Latest rates endpoint working - returns rates for 21 currencies with base INR, includes caching status, proper JSON structure with buy/sell rates, spread, source, and timestamps."
+      - working: true
+        agent: "testing"
+        comment: "✅ RE-TESTED: Format validation confirmed - returns rates in exact format { rates: { USD: { rate: 83.5, source: 'default' }, ... } } as required. Accessible without authentication."
 
   - task: "Forex History Pagination"
     implemented: true

@@ -108,9 +108,41 @@ code, pre {
     }
 }
 
+@keyframes slide-down {
+    from { 
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scale-in {
+    from { 
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); }
-    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
+    0%, 100% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.6); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 }
 
 .animate-fade-in {
@@ -121,8 +153,26 @@ code, pre {
     animation: slide-up 0.4s ease-out;
 }
 
+.animate-slide-down {
+    animation: slide-down 0.4s ease-out;
+}
+
+.animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+}
+
 .animate-pulse-glow {
     animation: pulse-glow 2s infinite;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 200% 100%;
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
 }
 
 /* Noise texture overlay */
@@ -137,6 +187,108 @@ code, pre {
     opacity: 0.03;
     pointer-events: none;
     z-index: 9999;
+}
+
+/* Global card styles */
+.card-gradient {
+    background: linear-gradient(145deg, rgba(24, 24, 27, 0.9), rgba(9, 9, 11, 0.95));
+    border: 1px solid rgba(39, 39, 42, 0.8);
+}
+
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.1);
+}
+
+/* Gradient text */
+.gradient-text-primary {
+    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-text-success {
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-text-warning {
+    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Button enhancements */
+.btn-glow {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-glow::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, #8B5CF6, #A78BFA, #8B5CF6);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    filter: blur(8px);
+}
+
+.btn-glow:hover::after {
+    opacity: 0.5;
+}
+
+/* Blur orb animation for backgrounds */
+.blur-orb {
+    filter: blur(100px);
+    animation: float 6s ease-in-out infinite;
+}
+
+/* Form input focus states */
+.input-focus-glow:focus {
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    border-color: #8B5CF6;
+}
+
+/* Section divider */
+.section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+}
+
+/* Status badge colors */
+.status-success { background-color: rgba(16, 185, 129, 0.15); color: #10B981; }
+.status-warning { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+.status-error { background-color: rgba(239, 68, 68, 0.15); color: #EF4444; }
+.status-info { background-color: rgba(59, 130, 246, 0.15); color: #3B82F6; }
+
+/* Loading skeleton */
+.skeleton {
+    background: linear-gradient(90deg, #18181B 25%, #27272A 50%, #18181B 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Custom selection */
+::selection {
+    background-color: rgba(139, 92, 246, 0.3);
+    color: white;
+}
+
+/* Focus visible for accessibility */
+.focus-ring:focus-visible {
+    outline: 2px solid #8B5CF6;
+    outline-offset: 2px;
 }
 
 @layer base {

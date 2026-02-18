@@ -282,8 +282,9 @@ class ExportFlowTestSuite:
             "shipment_id": self.test_shipment_id,
             "currency": "USD",  # Matching currency - should succeed
             "amount": 45000.00,
-            "payment_method": "wire_transfer",
-            "reference": "TEST-USD-MATCH"
+            "payment_date": "2024-01-20T00:00:00Z",
+            "payment_mode": "wire_transfer",
+            "bank_reference": "TEST-USD-MATCH"
         }
         
         response = make_request(

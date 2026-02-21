@@ -34,6 +34,7 @@ const ConnectorsPage = lazy(() => import('./pages/ConnectorsPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
+const RiskClockPage = lazy(() => import('./pages/RiskClockPage'));
 
 // Route configuration for maintainability
 const ROUTE_CONFIG = {

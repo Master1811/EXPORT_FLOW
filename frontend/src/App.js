@@ -51,6 +51,7 @@ const ROUTE_CONFIG = {
   notifications: { path: '/notifications', title: 'Notifications - ExportFlow' },
   settings: { path: '/settings', title: 'Settings - ExportFlow' },
   security: { path: '/security', title: 'Security & Audit - ExportFlow' },
+  riskClock: { path: '/risk-clock', title: 'RBI Risk Clock - ExportFlow' },
 };
 
 // Document title manager

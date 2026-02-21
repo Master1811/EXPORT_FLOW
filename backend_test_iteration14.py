@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 
 # Test Configuration
-BASE_URL = "https://flow-debug-preview.preview.emergentagent.com/api"
+BASE_URL = "http://localhost:8001/api"
 TEST_USER = {
     "email": "test@exportflow.com",
     "password": "Test@123",

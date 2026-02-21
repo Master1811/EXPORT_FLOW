@@ -235,7 +235,8 @@ def create_app() -> FastAPI:
         # Check database connectivity
         db_status = "unhealthy"
         try:
-            await db.command("ping")
+            # Use a simple operation that works with motor
+            await db.users.find_one({}, {"_id": 1})
             db_status = "healthy"
         except Exception as e:
             logger.error(f"Database health check failed: {e}")

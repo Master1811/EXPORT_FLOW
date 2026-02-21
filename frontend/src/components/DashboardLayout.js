@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { 
   Ship, LayoutDashboard, Package, FileText, CreditCard, 
   TrendingUp, Calculator, Brain, Users, Link2, Bell, 
-  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X, Shield
+  Settings, LogOut, ChevronLeft, ChevronRight, Menu, X, Shield, Clock
 } from 'lucide-react';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { icon: Package, label: 'Shipments', path: '/shipments' },
   { icon: FileText, label: 'Documents', path: '/documents' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
+  { icon: Clock, label: 'RBI Risk Clock', path: '/risk-clock' },
   { icon: TrendingUp, label: 'Forex', path: '/forex' },
   { icon: Calculator, label: 'GST & Compliance', path: '/compliance' },
   { icon: Calculator, label: 'Incentives', path: '/incentives' },

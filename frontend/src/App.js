@@ -282,6 +282,14 @@ function AppRoutes() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/risk-clock" 
+            element={
+              <ProtectedRoute title={ROUTE_CONFIG.riskClock.title}>
+                <RiskClockPage />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

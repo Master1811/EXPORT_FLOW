@@ -1,244 +1,127 @@
-# ExportFlow - Exporter Finance & Compliance Platform
+# ExportFlow Platform - Product Requirements Document
 
-## Original Problem Statement
-Build a comprehensive Exporter Finance & Compliance Platform with full-stack architecture (FastAPI + React + MongoDB), supporting export incentives, compliance tracking, payments, and AI-powered assistance.
-
----
-
-## What's Been Implemented
-
-### February 18, 2025 - Hero Animation & Documentation (COMPLETED)
-
-**A. Scroll-Synced Hero Animation:**
-- Created `ScrollSyncHero.js` component with Apple-style parallax behavior
-- Auto-cycling crossfade animation between 5 premium export/logistics images:
-  1. Container terminal at night
-  2. Cargo ship on ocean
-  3. Shipping containers in port
-  4. Finance dashboard analytics
-  5. Cargo plane on tarmac
-- 4-second interval between image transitions
-- Progress dots for manual image selection
-- Image captions with premium glassmorphism styling
-- Smooth parallax content fade-out on scroll
-
-**B. Documentation Created:**
-- `/app/local_setup_guide.md` - Comprehensive setup guide with:
-  - Prerequisites (Node.js, Python, MongoDB, Git)
-  - Quick start guide for backend and frontend
-  - Environment variable configuration
-  - Verification commands
-  - Project structure overview
-  - Troubleshooting section
-  - Test credentials
-
-**C. No Blank Sections:**
-- Removed complex scroll-based frame animation that caused gaps
-- Simplified to time-based crossfade for reliability
-- All 8 landing page sections render without blank areas
+## Version 2.0 - Security & Scalability Overhaul
+**Last Updated:** February 21, 2026
 
 ---
 
-### February 18, 2025 - Product Positioning Overhaul (COMPLETED)
+## Overview
+ExportFlow is a comprehensive export finance and compliance platform for Indian exporters. Version 2.0 addresses critical security vulnerabilities and implements three major revenue-recovery features.
 
-**A. PostHog Error Fix:**
-- Updated `/app/frontend/public/index.html` with `capture_performance: false`
-- Added global error handlers for PerformanceServerTiming errors
-- No more console errors from PostHog session recording
+## Architecture
+- **Backend**: FastAPI (Python) with MongoDB
+- **Frontend**: React.js with Shadcn UI & TailwindCSS
+- **AI Integration**: Gemini 3 Flash via Emergent LLM Key
+- **Storage**: S3-compatible with MongoDB fallback
 
-**B. Landing Page Redesign (Export Finance Focus):**
-- Removed ALL logistics/freight/operations terminology
-- New terminology: "capital tracking", "export finance", "receivable intelligence"
-- Updated hero images from shipping/cargo to finance dashboards and analytics
-- Industry toggle added: Brass, Textile, Handicrafts, Engineering
-- Each industry shows different headline, subheadline, and capital stat
-
-**C. New Components Added:**
-- `BlockedCapitalCalculator.js` - Interactive calculator showing:
-  - Monthly exports input
-  - Payment delay selector
-  - Incentive percentage selector
-  - Estimated blocked capital breakdown (Receivables, Incentives, GST Refunds, Total)
-- `Skeleton.js` - Loading states for premium SaaS feel:
-  - SkeletonLine, SkeletonCircle, SkeletonCard
-  - SkeletonStatCard, SkeletonTable, SkeletonChart
-  - SkeletonKPIStrip, DashboardSkeleton
-  - PageTransition, FadeSlide animation wrappers
-
-**D. Hero Features:**
-- Industry toggle (4 industries with different content)
-- Skip animation button (for returning users)
-- Scroll/Auto mode toggle (scroll-driven vs auto-cycling images)
-- Floating particles animation
-- Progress bar at top
-- Progress dots on right side
-- Image captions with glassmorphism
-
-**E. Landing Page Sections (Per Wireframe):**
-1. Navbar with navigation links
-2. Hero Section with industry toggle and CTAs
-3. Blocked Capital Calculator (interactive)
-4. How It Works (3 steps: Add Shipments, Track Capital, Recover Money)
-5. Features (4 cards: Receivable Aging, Incentive Tracker, GST Refund Monitor, Capital Insights)
-6. Trust Section (Bank-grade Security, Indian Data Residency, ISO 27001)
-7. Testimonials Section (3 testimonials from exporters)
-8. Pricing Section (Starter/Free, Professional/₹2,999, Enterprise/Custom)
-9. Final CTA Section
-10. Footer with links
+## User Personas
+1. **Export Manager** - Tracks shipments, manages receivables
+2. **Finance Controller** - Monitors compliance, generates reports
+3. **Compliance Officer** - Handles DGFT filings, RBI compliance, OFAC screening
 
 ---
 
-### February 18, 2025 - Landing Page Layout & CSS Consistency (COMPLETED)
+## What's Been Implemented (Feb 21, 2026)
 
-**A. Landing Page Layout Fixes:**
-- Fixed blank sections caused by ScrollHero component spacing issues
-- Updated section padding to consistent `py-20 sm:py-28` across all sections
-- Expanded pricing section container to `max-w-6xl` to fit all 3 cards properly
-- Verified all sections render correctly: Hero, Problem, How It Works, Features, Trust, Dashboard Preview, Pricing (3 cards), About, Contact, Footer
+### Critical Security Fixes
 
-**B. CSS Consistency Updates:**
-- Enhanced `/app/frontend/src/index.css` with new utility classes:
-  - Animation utilities: `animate-slide-down`, `animate-scale-in`, `animate-shimmer`, `animate-float`
-  - Card styles: `.card-gradient`, `.card-hover`
-  - Gradient text: `.gradient-text-primary`, `.gradient-text-success`, `.gradient-text-warning`
-  - Button enhancements: `.btn-glow`
-  - Form focus states: `.input-focus-glow`
-  - Status badges: `.status-success`, `.status-warning`, `.status-error`, `.status-info`
-  - Loading skeleton: `.skeleton`
-  - Custom selection styling
+| Issue | Status | Solution |
+|-------|--------|----------|
+| Local /tmp storage | ✅ FIXED | S3 + MongoDB with tenant-scoped paths |
+| Missing tenant auth | ✅ FIXED | TenantAuthService with ownership verification |
+| Unauthenticated endpoints | ✅ FIXED | JWT required on all routes |
+| Hardcoded mock scores | ✅ FIXED | Aggregation pipeline scoring |
+| Broken PDF handling | ✅ FIXED | PyPDF2 text extraction |
+| Duplicate startup handlers | ✅ FIXED | Unified startup event |
+| Health check always healthy | ✅ FIXED | Real database status check |
+| Missing OFAC screening | ✅ FIXED | OFACScreeningService |
+| No audit logging | ✅ FIXED | Comprehensive audit trails |
 
-**C. Auth Flow Fixes:**
-- Fixed `AuthContext.js` API URL construction (was missing `/api` prefix)
-- Login page: Has Back to Home link, clickable logo, form fields with data-testid
-- Register page: Has Back to Home link, clickable logo, password strength indicator
-- Logout flow: Properly calls backend and navigates to landing page
+### Feature 1: DGFT-Ready Excel Generator
+- **Endpoint**: `GET /api/dgft/export`
+- **Status**: ✅ COMPLETE
+- Generates validated .xlsx matching DGFT eBRC template
+- Highlights missing data cells in red/yellow
+- Includes Data Quality Summary sheet
 
-**D. Verification:**
-- All 3 pricing cards visible (Starter, Professional, Enterprise)
-- All landing page sections load without blank spaces
-- Login/Register pages have consistent dark theme with violet accents
-- Dashboard loads correctly after login with sidebar navigation
+### Feature 2: Digital Audit Vault
+- **Endpoints**: `/api/audit-vault/*`
+- **Status**: ✅ COMPLETE
+- PDF cover sheet with FEMA 270-day compliance check
+- Background ZIP bundling
+- Time-limited download URLs (24 hours)
 
----
+### Feature 3: RBI 9-Month Risk Clock
+- **Endpoints**: `/api/risk-clock/*`
+- **Status**: ✅ COMPLETE
+- MongoDB aggregation for age calculation
+- CRITICAL/WARNING/MONITOR categorization
+- Gemini AI for RBI extension letter drafting
+- One-click payment realization
 
-### February 7, 2025 - Security & Trust Framework (COMPLETED)
-
-**A. Field-Level Encryption (Vault Strategy):**
-- AES-256-GCM encryption for sensitive data
-- Encrypted fields: Buyer Name, Invoice Values, Bank Details, PAN, Phone, Email
-- Field-specific key derivation for added security
-- Database administrators cannot read plain-text financials
-- Located: `/app/backend/app/common/encryption_service.py`
-
-**B. Zero-Knowledge Proof (Transparency):**
-- **Audit Logs Dashboard** at `/security` or `/audit-logs`
-  - All Activity tab: Every view, edit, export action
-  - PII Access tab: All unmask/decrypt events
-  - Security Events tab: Logins, logouts, password changes
-- **Tamper-Proof Logs**: Hash chain ensures logs cannot be modified/deleted
-  - Each log contains: hash + previous_hash (SHA-256)
-  - Chain verification endpoint: `/api/security/verify-integrity`
-- **PII Masking by default**: Sensitive data masked (e.g., PAN: ******1234)
-- **On-Demand Decryption**: Data only unmasked on explicit "View" click
-
-**C. Access Logging:**
-- Every action logged with:
-  - Timestamp
-  - User ID
-  - IP Address
-  - User Agent
-  - Session ID
-- Action types: view, edit, create, delete, export, login, logout, pii_unmask, decrypt
-- Located: `/app/backend/app/common/tamper_proof_audit.py`
-
-**D. Secure API Gateway:**
-- **JWT Short TTL**: Access tokens expire in 15 minutes (was 24 hours)
-- **Refresh Tokens**: 7-day validity for seamless UX
-- **Token Rotation**: New refresh token on each refresh
-- **JTI Tracking**: Each token has unique ID for revocation
-- Auto-refresh: Frontend refreshes token 1 minute before expiry
-- Located: `/app/backend/app/core/security.py`
-
-**E. On-Demand Decryption:**
-- Data masked by default in all GET endpoints
-- `/api/shipments/{id}/unmasked` - Explicit unmask endpoint
-- Creates PII access audit log on every unmask request
+### Additional Services
+- **OFAC Screening**: `/api/compliance/ofac-screen`
+- **Credit Scoring**: `/api/credit/company-score`, `/api/credit/buyer-score/{id}`
+- **Secure Storage**: `/api/files/secure-upload`
+- **Document AI**: `/api/documents/{id}/ai-process`
 
 ---
 
-## Security API Endpoints
+## API Endpoints
 
-### Authentication (with Short TTL)
-- `POST /api/auth/login` - Returns access_token (15 min) + refresh_token (7 days)
-- `POST /api/auth/refresh` - Use refresh token to get new tokens
-- `POST /api/auth/logout` - Blacklist current token
-- `POST /api/auth/change-password` - Invalidates all tokens
-
-### Security & Audit
-- `GET /api/security/audit-logs` - All audit logs with filters
-- `GET /api/security/my-activity` - Current user's activity
-- `GET /api/security/pii-access-logs` - PII unmask events
-- `GET /api/security/security-events` - Login/logout events
-- `GET /api/security/resource-history/{type}/{id}` - Resource audit trail
-- `GET /api/security/verify-integrity` - Verify hash chain (admin)
-- `GET /api/security/stats` - Audit statistics
-- `GET /api/security/action-types` - Filter options
-
----
-
-## Test Reports Summary
-| Iteration | Backend | Frontend | Features |
-|-----------|---------|----------|----------|
-| 7 | 100% (11/11) | 100% | P0/P1 Fixes |
-| 8 | 100% (12/12) | 95% | Quick Start, Dashboard UI |
-| 9 | 100% (16/16) | 100% | **Security Framework** |
-| 10 | 100% (9/9) | 100% | **Landing Page & CSS** |
-| 11 | 100% (9/9) | 100% | **Hero Animation & Docs** |
-| 12 | 100% (9/9) | 100% | **Product Positioning Overhaul** |
+### Export Features
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/dgft/export` | GET | Download DGFT Excel |
+| `/api/dgft/validate` | GET | Validate DGFT data |
+| `/api/audit-vault/generate/{id}` | POST | Generate audit package |
+| `/api/audit-vault/status/{job_id}` | GET | Check job status |
+| `/api/audit-vault/download/{id}` | GET | Download ZIP |
+| `/api/risk-clock` | GET | Risk clock dashboard |
+| `/api/risk-clock/aging-summary` | GET | Aging distribution |
+| `/api/risk-clock/realize/{id}` | POST | Record payment |
+| `/api/risk-clock/draft-letter/{id}` | POST | AI letter draft |
+| `/api/compliance/ofac-screen` | POST | OFAC screening |
+| `/api/credit/company-score` | GET | Company score |
+| `/api/credit/buyer-score/{id}` | GET | Buyer score |
 
 ---
 
-## Credentials
-```
-Email: test@moradabad.com
-Password: Test@123
-```
-
----
-
-## Security Compliance Checklist
-
-### ✅ Implemented
-- [x] Field-Level Encryption (AES-256-GCM)
-- [x] Tamper-Proof Audit Logs (Hash Chain)
-- [x] PII Masking by Default
-- [x] On-Demand Decryption with Audit
-- [x] Access Logging (Timestamp, User ID, IP)
-- [x] JWT Short TTL (15 min)
-- [x] Refresh Token Rotation
-- [x] Audit Logs Dashboard UI
-- [x] Security Events Monitoring
-
-### ⏳ Not Implemented (Skipped per user request)
-- [ ] Real-time Security Alerts (SMS/WhatsApp)
-- [ ] New Device Login Notifications
+## Testing Results (Feb 21, 2026)
+- **Backend**: 92.9% pass rate
+- **Frontend**: 95% pass rate
+- All core fintech features working
 
 ---
 
 ## Prioritized Backlog
 
-### P2 Remaining
-- [ ] TC-SEC-04: Verify no PII in frontend state logs
-- [ ] TC-SYS-03: Performance testing (Aging Dashboard <300ms)
+### P0 (Critical)
+- [x] Tenant authorization on all endpoints
+- [x] OFAC sanctions screening
+- [x] Accurate health checks
+- [ ] Production S3 bucket configuration
 
-### Future/Backlog
-- [ ] WhatsApp notifications (requires Twilio)
-- [ ] SMS alerts for new device logins
-- [ ] Migration to Next.js + Spring Boot
-- [ ] Mobile-responsive improvements for smaller screens
-- [ ] Dark/Light theme toggle
-- [ ] Export data to CSV/Excel functionality
+### P1 (High)
+- [ ] Email notifications for critical shipments
+- [ ] Batch RBI letter generation
+- [ ] Export compliance dashboard widgets
+
+### P2 (Medium)
+- [ ] Custom report builder
+- [ ] WhatsApp notifications
+- [ ] Buyer credit scoring enhancements
 
 ---
 
-*Last Updated: February 18, 2025*
+## Technical Notes
+- EMERGENT_LLM_KEY in backend/.env
+- All file operations use BytesIO (no /tmp)
+- Magic-byte validation on uploads
+- Multi-tenant isolation enforced
+
+## Next Tasks
+1. Configure production S3 bucket
+2. Set up email alerts for critical risk shipments
+3. Add batch operations for RBI letters
+4. Implement compliance dashboard summary widget

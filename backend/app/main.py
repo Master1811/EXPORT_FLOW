@@ -35,6 +35,7 @@ from .notifications.router import router as notifications_router
 from .exports.router import router as exports_router
 from .audit.router import router as audit_router
 from .security.router import router as security_router
+from .services.router import router as export_features_router
 
 # Configure logging
 logging.basicConfig(

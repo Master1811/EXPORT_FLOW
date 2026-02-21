@@ -199,23 +199,14 @@ def create_app() -> FastAPI:
         # Re-raise to let FastAPI handle it
         raise exc
 
-    # Startup event - create indexes and configure logging
+    # Unified Startup event - create indexes, configure logging, initialize metrics
     @app.on_event("startup")
     async def startup():
         configure_logging()
         await ensure_indexes()
-        struct_logger.info("Application startup complete", indexes="ensured", rate_limiting="enabled")
-
-    # Shutdown event
-    @app.on_event("shutdown")
-    async def shutdown():
-        await close_db()
-
-    # Startup event - initialize metrics with actual data
-    @app.on_event("startup")
-    async def startup():
+        
+        # Initialize metrics with actual database counts
         try:
-            # Initialize user and company metrics with current database counts
             total_users = await db.users.count_documents({})
             total_companies = await db.companies.count_documents({})
             users_registered.set(total_users)
@@ -223,6 +214,13 @@ def create_app() -> FastAPI:
             logger.info(f"Metrics initialized: {total_users} users, {total_companies} companies")
         except Exception as e:
             logger.error(f"Error initializing metrics: {e}")
+        
+        struct_logger.info("Application startup complete", indexes="ensured", rate_limiting="enabled")
+
+    # Shutdown event
+    @app.on_event("shutdown")
+    async def shutdown():
+        await close_db()
 
     # Root endpoints
     @app.get("/api/")
@@ -231,13 +229,16 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     async def health_check():
+        """Accurate health check reflecting actual dependencies"""
         update_uptime()
-        return {"status": "healthy", "timestamp": now_iso()}
+        
         # Check database connectivity
+        db_status = "unhealthy"
         try:
             await db.command("ping")
             db_status = "healthy"
-        except Exception:
+        except Exception as e:
+            logger.error(f"Database health check failed: {e}")
             db_status = "unhealthy"
         
         overall_status = "healthy" if db_status == "healthy" else "degraded"

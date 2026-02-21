@@ -39,6 +39,7 @@ const NavLink = React.memo(({ item, isActive, collapsed, onNavigate }) => {
         '/shipments': () => import('../pages/ShipmentsPage'),
         '/documents': () => import('../pages/DocumentsPage'),
         '/payments': () => import('../pages/PaymentsPage'),
+        '/risk-clock': () => import('../pages/RiskClockPage'),
         '/forex': () => import('../pages/ForexPage'),
         '/compliance': () => import('../pages/CompliancePage'),
         '/incentives': () => import('../pages/IncentivesPage'),
